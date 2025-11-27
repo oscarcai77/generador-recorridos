@@ -1,0 +1,1185 @@
+<!-- ******** INICIO BLOQUE 1: HTML + CSS ******** -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Recorridos de orientación — Versión con conos movibles</title>
+<style>
+  :root{ --violeta:#B03A94; --bg:#f7f7f9; --panel-bg:rgba(255,255,255,0.95) }
+  body{
+    font-family: "Segoe UI", sans-serif;
+    margin:0;
+    padding:1rem;
+    display:flex;
+    gap:1.5rem;
+    align-items:flex-start;
+    background: var(--bg);
+  }
+  #panel{
+    width: 400px;
+    background: var(--panel-bg);
+    padding: 1.3rem;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  }
+  h2{ 
+    margin: 0 0 0.9rem 0; 
+    font-size: 1.3rem;
+  }
+  label{ 
+    font-size: 1.1rem;
+    margin-top: 0.9rem; 
+    display: block;
+  }
+  input[type="text"], #listaConos, select { 
+    width: 100%; 
+    box-sizing: border-box; 
+    padding: 9px 11px;
+    margin-top: 8px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 1.1rem;
+  }
+  .row { display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+  .small { 
+    padding: 9px 13px;
+    font-size: 1.1rem;
+    border-radius: 8px;
+    border: 0;
+    background: var(--violeta);
+    color: #fff;
+    cursor: pointer;
+  }
+  button{ 
+    background: var(--violeta);
+    color: #fff;
+    border: 0;
+    padding: 11px 15px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+  .btn-edicion {
+    background: #e74c3c;
+    margin-top: 8px;
+  }
+  svg{ 
+    max-width:920px; 
+    width:100%; 
+    height:auto; 
+    border:1px solid #ccc; 
+    background:white; 
+  }
+  .cono-pointer{ cursor:pointer }
+  .cono-selected{ stroke:#000; stroke-width:0.9; fill-opacity:0.85; }
+  .cono-dragging { opacity: 0.7; }
+  .cono-descartado { opacity: 0.4; fill: #999 !important; }
+  hr{ border:0; border-top:1px solid #eee; margin:10px 0; }
+  
+  /* Campos de conos en grid 4x3 */
+  #camposConos {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-top: 6px;
+  }
+  #camposConos input {
+    padding: 6px 8px;
+    font-size: 1rem;
+    margin-top: 0;
+  }
+  
+  /* Zona de descarte */
+  .zona-descarte {
+    fill: rgba(255, 0, 0, 0.1);
+    stroke: rgba(255, 0, 0, 0.5);
+    stroke-width: 1;
+    stroke-dasharray: 4,4;
+  }
+</style>
+</head>
+<body>
+
+  <div id="panel">
+    <h2>Recorrido de orientación</h2>
+
+    <label>Introducir conos separados por comas</label>
+    <input id="listaConos" placeholder="Ej: 42,39,58,62,33,40,52">
+    <div class="row">
+      <button class="small" onclick="aplicarLista()">Aplicar lista</button>
+      <button class="small" onclick="borrarRecorrido()">Borrar recorrido</button>
+      <button class="small" onclick="generarRecorridoAleatorio()" id="botonAleatorio">Recorrido aleatorio (7)</button>
+      <button class="small" onclick="copiarNumerosRecorrido()">Copiar números</button>
+    </div>
+
+    <label>Conos seleccionados (máx. 12)</label>
+    <div id="camposConos">
+      <input id="id1" type="text" oninput="actualizarRecorrido()" placeholder="1">
+      <input id="id2" type="text" oninput="actualizarRecorrido()" placeholder="2">
+      <input id="id3" type="text" oninput="actualizarRecorrido()" placeholder="3">
+      <input id="id4" type="text" oninput="actualizarRecorrido()" placeholder="4">
+      <input id="id5" type="text" oninput="actualizarRecorrido()" placeholder="5">
+      <input id="id6" type="text" oninput="actualizarRecorrido()" placeholder="6">
+      <input id="id7" type="text" oninput="actualizarRecorrido()" placeholder="7">
+      <input id="id8" type="text" oninput="actualizarRecorrido()" placeholder="8">
+      <input id="id9" type="text" oninput="actualizarRecorrido()" placeholder="9">
+      <input id="id10" type="text" oninput="actualizarRecorrido()" placeholder="10">
+      <input id="id11" type="text" oninput="actualizarRecorrido()" placeholder="11">
+      <input id="id12" type="text" oninput="actualizarRecorrido()" placeholder="12">
+    </div>
+
+    <div class="row" style="margin-top:8px; align-items:center;">
+      <input id="toggleFondo" type="checkbox" disabled>
+      <label for="toggleFondo" style="margin:0">Mostrar fondo (Fondo_campo.png/jpg)</label>
+    </div>
+
+    <hr>
+
+    <label>Nombre del recorrido</label>
+    <input id="nombre" placeholder="Ej: Recorrido_A">
+
+    <!-- Panel de configuración desplegable -->
+    <details style="margin-top: 12px; padding: 8px; background: #f8f9fa; border-radius: 6px;">
+      <summary style="cursor: pointer; font-weight: bold; padding: 4px; font-size: 1.5rem;">⚙️ Configuración avanzada</summary>
+      
+      <div style="margin-top: 8px;">
+        <label>Número de puntos: <span id="valorPuntos">7</span></label>
+        <input type="range" id="numeroPuntos" min="5" max="12" step="1" value="7" onchange="actualizarNumeroPuntos()" style="width: 100%;">
+      </div>
+
+      <div style="margin-top: 8px;">
+        <label>Grosor líneas (1.3): <span id="valorGrosor">1.3</span>mm</label>
+        <input type="range" id="grosorLineas" min="0.5" max="2.5" step="0.1" value="1.3" onchange="actualizarConfiguracion()" style="width: 100%;">
+      </div>
+      
+      <div style="margin-top: 8px;">
+        <label>Grosor bordes conos (0.2): <span id="valorBordeConos">0.2</span>mm</label>
+        <input type="range" id="grosorBordeConos" min="0.1" max="1" step="0.1" value="0.2" onchange="actualizarConfiguracion()" style="width: 100%;">
+      </div>
+      
+      <div style="margin-top: 8px;">
+        <label>Tamaño conos (3.5): <span id="valorConos">3.5</span>mm</label>
+        <input type="range" id="tamanoConos" min="2" max="6" step="0.5" value="3.5" onchange="actualizarConfiguracion()" style="width: 100%;">
+      </div>
+      
+      <div style="margin-top: 8px;">
+        <label>Radio círculos (8): <span id="valorOverlay">8</span>mm</label>
+        <input type="range" id="radioOverlay" min="5" max="12" step="0.5" value="8" onchange="actualizarConfiguracion()" style="width: 100%;">
+      </div>
+      
+      <div style="margin-top: 8px;">
+        <label>Tamaño texto números (9): <span id="valorTexto">9</span>px</label>
+        <input type="range" id="tamanoTexto" min="6" max="12" step="0.5" value="9" onchange="actualizarConfiguracion()" style="width: 100%;">
+      </div>
+
+      <!-- Control para tamaño de cuadrícula -->
+      <div style="margin-top: 8px;">
+        <label>Tamaño cuadrícula (10): <span id="valorCuadricula">10</span>px</label>
+        <input type="range" id="tamanoCuadricula" min="5" max="20" step="5" value="10" onchange="actualizarCuadricula()" style="width: 100%;">
+      </div>
+    </details>
+
+    <h2 style="margin-top:12px; font-size:1.2rem">Exportar a SVG</h2>
+    <div class="row">
+      <button class="small" onclick="exportarSVG()">Exportar a SVG</button>
+      <button class="small" onclick="exportarmediano()">SVG Mediano</button>
+      <button class="small" onclick="exportarpeque()">SVG Pequeño</button>
+      <button class="small" onclick="exportarSVGConIDs()">SVG con IDs</button>
+    </div>
+
+    <!-- Botón de modo edición separado -->
+    <hr style="margin: 16px 0;">
+    <h2 style="margin: 0 0 8px 0; font-size:1.2rem; color: #e74c3c;">Modo Edición</h2>
+    <div class="row">
+      <button class="small btn-edicion" onclick="toggleModoEdicion()" id="toggleEdicion">Activar modo edición</button>
+    </div>
+
+    <!-- Botones para resetear conos -->
+    <div class="row" style="margin-top: 8px;">
+      <button class="small" onclick="excluirTodosConos()">Excluir todos los conos</button>
+      <button class="small" onclick="resetearConos()">Resetear conos</button>
+    </div>
+
+    <div style="font-size: 1.2rem; color: #666; margin-top: 4px;">
+      En modo edición: Arrastra conos para moverlos. Los conos en zonas rojas no se exportan.
+    </div>
+  </div>
+<!-- ******** FIN BLOQUE 1 ******** -->
+
+<!-- ******** INICIO BLOQUE 2: SVG Fijo ******** -->
+  <!-- SVG con lienzo de 200x400mm (proporción 1:2) -->
+  <svg id="mapa" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 400" width="800">
+    <!-- Imagen de fondo dentro del SVG -->
+    <image id="bgImage" x="0" y="0" width="200" height="400" style="display:none;" data-noexport="true" opacity="0.45" />
+    
+    <!-- Zonas de descarte (superior e inferior) -->
+    <rect class="zona-descarte" x="0" y="0" width="200" height="50" style="display:none;"/>
+    <rect class="zona-descarte" x="0" y="350" width="200" height="50" style="display:none;"/>
+    
+    <g id="fixed-layer">
+      <!-- Doble círculo central en la parte superior -->
+      <circle cx="100" cy="25" r="8" stroke="#B03A94" stroke-width="1.3" fill="none" id="circuloExterior"/>
+      <circle cx="100" cy="25" r="5.4" stroke="#B03A94" stroke-width="1.3" fill="none" id="circuloInterior"/>
+
+      <!-- Triángulo único en la parte inferior -->
+      <polygon points="91.25,382.95 100,368.95 108.75,382.95" stroke="#B03A94" stroke-width="1.3" fill="none"/>
+      
+      <!-- Conos distribuidos en el área permitida -->
+      <!-- Fila 1 -->
+      <circle id="cono24" cx="25" cy="80" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono51" cx="50" cy="80" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono91" cx="75" cy="80" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono29" cx="125" cy="80" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono79" cx="150" cy="80" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono62" cx="175" cy="80" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+
+      <!-- Fila 2 -->
+      <circle id="cono30" cx="25" cy="120" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono70" cx="50" cy="120" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono40" cx="75" cy="120" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono45" cx="125" cy="120" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono18" cx="150" cy="120" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono85" cx="175" cy="120" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+
+      <!-- Fila 3 -->
+      <circle id="cono55" cx="25" cy="160" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono15" cx="50" cy="160" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono96" cx="75" cy="160" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono68" cx="125" cy="160" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono39" cx="150" cy="160" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono33" cx="175" cy="160" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+
+      <!-- Fila 4 -->
+      <circle id="cono27" cx="25" cy="200" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono82" cx="50" cy="200" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono59" cx="75" cy="200" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono31" cx="125" cy="200" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono76" cx="150" cy="200" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono64" cx="175" cy="200" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+
+      <!-- Fila 5 -->
+      <circle id="cono48" cx="25" cy="240" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono13" cx="50" cy="240" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono89" cx="75" cy="240" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono52" cx="125" cy="240" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono11" cx="150" cy="240" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono94" cx="175" cy="240" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+
+      <!-- Fila 6 -->
+      <circle id="cono71" cx="25" cy="280" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono37" cx="50" cy="280" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono22" cx="75" cy="280" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono73" cx="125" cy="280" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono43" cx="150" cy="280" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono87" cx="175" cy="280" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+    </g>
+
+    <!-- Capas dinámicas encima -->
+    <g id="lineas"></g>
+    <g id="recorrido"></g>
+    <g id="numeros"></g>
+  </svg>
+<!-- ******** FIN BLOQUE 2 ******** -->
+
+<!-- ******** INICIO BLOQUE 3: Variables y Listeners ******** -->
+<script>
+// Variables globales para configuración
+let GROSOR_LINEAS = 1.3;
+let GROSOR_BORDE_CONOS = 0.2;
+let TAMANO_CONOS = 3.5;
+let RADIO_OVERLAY = 8;
+let TAMANO_TEXTO = 9;
+let TAMANO_CUADRICULA = 10;
+let NUMERO_PUNTOS = 7;
+
+// Variables para el modo de edición
+let modoEdicion = false;
+let conoArrastrando = null;
+let offsetX = 0;
+let offsetY = 0;
+
+// Zonas de descarte
+const ZONAS_DESCARTE = [
+  { x: 0, y: 0, width: 200, height: 50 },      // Superior
+  { x: 0, y: 350, width: 200, height: 50 }     // Inferior
+];
+
+// Área permitida para conos (excluyendo zonas de descarte)
+const AREA_PERMITIDA = {
+  minX: 0,
+  maxX: 200,
+  minY: 50,    // Debajo de zona descarte superior
+  maxY: 350    // Encima de zona descarte inferior
+};
+
+/* --- referencias --- */
+const campos = Array.from({length:12}, (_,i)=>document.getElementById('id'+(i+1)));
+const gLineas = document.getElementById('lineas');
+const gRecorrido = document.getElementById('recorrido');
+const gNumeros = document.getElementById('numeros');
+const toggleFondo = document.getElementById('toggleFondo');
+const bgImage = document.getElementById('bgImage');
+
+/* --- buscar fondo.png/jpg y activar checkbox solo si existe --- */
+(function probeBackground(){
+  function test(src){
+    return new Promise(res=>{
+      const img = new Image();
+      img.onload = ()=>res(src);
+      img.onerror = ()=>res(null);
+      img.src = src + '?_=' + Date.now();
+    });
+  }
+  Promise.all([test('Fondo_campo.png'), test('Fondo_campo.jpg')]).then(([png,jpg])=>{
+    const found = png || jpg;
+    if(found){
+      bgImage.setAttribute('href', found);
+      toggleFondo.disabled = false;
+      toggleFondo.addEventListener('change', ()=> {
+        bgImage.style.display = toggleFondo.checked ? 'block' : 'none';
+      });
+    } else {
+      toggleFondo.disabled = true;
+    }
+  });
+})();
+
+/* --- ayuda: comprobar duplicado en campos --- */
+function estaSeleccionado(id){ return campos.some(c => c.value === String(id)); }
+
+/* --- aplicar lista de coma (botón) --- */
+function aplicarLista(){
+  const lista = document.getElementById('listaConos').value.trim();
+  if(!lista) return;
+  const valores = lista.split(',').map(s=>s.trim()).filter(Boolean).slice(0, NUMERO_PUNTOS);
+  campos.forEach((c,i)=> c.value = valores[i] || '');
+  actualizarRecorrido();
+}
+
+/* --- añadir listeners a los conos --- */
+function configurarConos() {
+  document.querySelectorAll('#fixed-layer circle[id^="cono"]').forEach(cono => {
+    cono.classList.add('cono-pointer');
+    
+    // Eliminar listeners anteriores para evitar duplicados
+    cono.removeEventListener('click', manejarClicCono);
+    cono.removeEventListener('mousedown', iniciarArrastre);
+    
+    if (modoEdicion) {
+      cono.addEventListener('mousedown', iniciarArrastre);
+    } else {
+      cono.addEventListener('click', manejarClicCono);
+    }
+  });
+}
+
+function manejarClicCono(event) {
+  const cono = event.target;
+  const id = cono.id.replace('cono','');
+  if(estaSeleccionado(id)) return;
+  const idx = campos.findIndex(c => !c.value && c.style.display !== 'none');
+  if(idx === -1){ alert('Ya has seleccionado los ' + NUMERO_PUNTOS + ' conos máximos.'); return; }
+  campos[idx].value = id;
+  actualizarRecorrido();
+}
+
+/* --- borrar recorrido y campos --- */
+function borrarRecorrido(){
+  campos.forEach(c=>c.value='');
+  gLineas.innerHTML = '';
+  gRecorrido.innerHTML = '';
+  gNumeros.innerHTML = '';
+  document.querySelectorAll('#fixed-layer circle[id^="cono"]').forEach(c=>c.classList.remove('cono-selected'));
+}
+
+/* --- Copiar IDs de conos del recorrido al portapapeles --- */
+function copiarNumerosRecorrido() {
+    const ids = campos.map(c => c.value.trim()).filter(Boolean);
+    if (ids.length === 0) {
+        alert('No hay recorrido para copiar');
+        return;
+    }
+    
+    const idsConos = ids.join('\t');
+    
+    navigator.clipboard.writeText(idsConos)
+        .then(() => {
+            alert(`IDs copiados: ${ids.join(', ')}`);
+        })
+        .catch(err => {
+            console.error('Error al copiar: ', err);
+            const textArea = document.createElement('textarea');
+            textArea.value = idsConos;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            alert(`IDs copiados: ${ids.join(', ')}`);
+        });
+}
+
+/* --- Actualizar número de puntos --- */
+function actualizarNumeroPuntos() {
+    NUMERO_PUNTOS = parseInt(document.getElementById('numeroPuntos').value);
+    document.getElementById('valorPuntos').textContent = NUMERO_PUNTOS;
+    
+    // Mostrar/ocultar campos según el número seleccionado
+    for (let i = 1; i <= 12; i++) {
+        const campo = document.getElementById('id' + i);
+        if (campo) {
+            campo.style.display = i <= NUMERO_PUNTOS ? 'block' : 'none';
+            if (i > NUMERO_PUNTOS) campo.value = ''; // Limpiar campos ocultos
+        }
+    }
+    
+    // Si hay valores en campos visibles, actualizar el recorrido
+    if (Array.from(campos).slice(0, NUMERO_PUNTOS).some(campo => campo.value)) {
+        actualizarRecorrido();
+    }
+    actualizarBotonAleatorio();
+}
+
+/* --- Actualizar texto del botón aleatorio --- */
+function actualizarBotonAleatorio() {
+    const boton = document.getElementById('botonAleatorio');
+    if (boton) {
+        boton.textContent = 'Recorrido aleatorio (' + NUMERO_PUNTOS + ')';
+    }
+}
+
+// Inicializar botón al cargar la página
+actualizarBotonAleatorio();
+// ******** FIN BLOQUE 3 ********
+
+<!-- ******** INICIO BLOQUE 4: Funciones de Edición y Dibujo ******** -->
+/* --- Excluir todos los conos (mover a zonas de descarte ordenados) --- */
+function excluirTodosConos() {
+  if (!modoEdicion) {
+    alert('Activa el modo edición primero');
+    return;
+  }
+  
+  const conos = Array.from(document.querySelectorAll('#fixed-layer circle[id^="cono"]'));
+  
+  // Dividir en dos grupos
+  const mitad = Math.ceil(conos.length / 2);
+  const grupoIzquierdo = conos.slice(0, mitad);
+  const grupoDerecho = conos.slice(mitad);
+  
+  // Configuración de la cuadrícula - DENTRO de la zona de descarte (y: 0-50)
+  const columnas = 6; // 6 columnas por grupo
+  const espacioX = 25;
+  const espacioY = 12;
+  const inicioY = 10;
+  const margenLateral = 10;
+  
+  // Posicionar grupo izquierdo
+  grupoIzquierdo.forEach((cono, index) => {
+    const fila = Math.floor(index / columnas);
+    const columna = index % columnas;
+    
+    const x = margenLateral + (columna * espacioX);
+    const y = inicioY + (fila * espacioY);
+    
+    cono.setAttribute('cx', x);
+    cono.setAttribute('cy', y);
+    actualizarEstadoConoDescarte(cono);
+  });
+  
+  // Posicionar grupo derecho
+  grupoDerecho.forEach((cono, index) => {
+    const fila = Math.floor(index / columnas);
+    const columna = index % columnas;
+    
+    const x = 100 + margenLateral + (columna * espacioX);
+    const y = inicioY + (fila * espacioY);
+    
+    cono.setAttribute('cx', x);
+    cono.setAttribute('cy', y);
+    actualizarEstadoConoDescarte(cono);
+  });
+  
+  actualizarRecorrido();
+}
+
+/* --- Resetear conos a posición original --- */
+function resetearConos() {
+  // Posiciones originales (del BLOQUE 2)
+  const posicionesOriginales = {
+    // Fila 1
+    '24': {x: 25, y: 80}, '51': {x: 50, y: 80}, '91': {x: 75, y: 80},
+    '29': {x: 125, y: 80}, '79': {x: 150, y: 80}, '62': {x: 175, y: 80},
+    
+    // Fila 2
+    '30': {x: 25, y: 120}, '70': {x: 50, y: 120}, '40': {x: 75, y: 120},
+    '45': {x: 125, y: 120}, '18': {x: 150, y: 120}, '85': {x: 175, y: 120},
+    
+    // Fila 3
+    '55': {x: 25, y: 160}, '15': {x: 50, y: 160}, '96': {x: 75, y: 160},
+    '68': {x: 125, y: 160}, '39': {x: 150, y: 160}, '33': {x: 175, y: 160},
+    
+    // Fila 4
+    '27': {x: 25, y: 200}, '82': {x: 50, y: 200}, '59': {x: 75, y: 200},
+    '31': {x: 125, y: 200}, '76': {x: 150, y: 200}, '64': {x: 175, y: 200},
+    
+    // Fila 5
+    '48': {x: 25, y: 240}, '13': {x: 50, y: 240}, '89': {x: 75, y: 240},
+    '52': {x: 125, y: 240}, '11': {x: 150, y: 240}, '94': {x: 175, y: 240},
+    
+    // Fila 6
+    '71': {x: 25, y: 280}, '37': {x: 50, y: 280}, '22': {x: 75, y: 280},
+    '73': {x: 125, y: 280}, '43': {x: 150, y: 280}, '87': {x: 175, y: 280}
+  };
+  
+  document.querySelectorAll('#fixed-layer circle[id^="cono"]').forEach(cono => {
+    const id = cono.id.replace('cono', '');
+    const pos = posicionesOriginales[id];
+    if (pos) {
+      cono.setAttribute('cx', pos.x);
+      cono.setAttribute('cy', pos.y);
+      actualizarEstadoConoDescarte(cono);
+    }
+  });
+  
+  actualizarRecorrido();
+}
+
+/* --- Funciones para arrastrar conos --- */
+function iniciarArrastre(event) {
+  if (!modoEdicion) return;
+  
+  conoArrastrando = event.target;
+  const svg = document.getElementById('mapa');
+  const puntoSVG = svg.createSVGPoint();
+  
+  puntoSVG.x = event.clientX;
+  puntoSVG.y = event.clientY;
+  const transformado = puntoSVG.matrixTransform(svg.getScreenCTM().inverse());
+  
+  offsetX = transformado.x - parseFloat(conoArrastrando.getAttribute('cx'));
+  offsetY = transformado.y - parseFloat(conoArrastrando.getAttribute('cy'));
+  
+  conoArrastrando.classList.add('cono-dragging');
+  
+  document.addEventListener('mousemove', arrastrarCono);
+  document.addEventListener('mouseup', soltarCono);
+  event.preventDefault();
+}
+
+function arrastrarCono(event) {
+  if (!conoArrastrando) return;
+  
+  const svg = document.getElementById('mapa');
+  const puntoSVG = svg.createSVGPoint();
+  
+  puntoSVG.x = event.clientX;
+  puntoSVG.y = event.clientY;
+  const transformado = puntoSVG.matrixTransform(svg.getScreenCTM().inverse());
+  
+  let nuevaX = transformado.x - offsetX;
+  let nuevaY = transformado.y - offsetY;
+  
+  // Ajustar a la cuadrícula
+  nuevaX = Math.round(nuevaX / TAMANO_CUADRICULA) * TAMANO_CUADRICULA;
+  nuevaY = Math.round(nuevaY / TAMANO_CUADRICULA) * TAMANO_CUADRICULA;
+  
+  // Verificar límites (PERMITIR zonas de descarte)
+  nuevaX = Math.max(0, Math.min(200, nuevaX));
+  nuevaY = Math.max(0, Math.min(400, nuevaY));
+  
+  conoArrastrando.setAttribute('cx', nuevaX);
+  conoArrastrando.setAttribute('cy', nuevaY);
+  
+  // Verificar si está en zona de descarte
+  actualizarEstadoConoDescarte(conoArrastrando);
+  
+  // Actualizar recorrido si este cono está seleccionado
+  const id = conoArrastrando.id.replace('cono', '');
+  if (estaSeleccionado(id)) {
+    actualizarRecorrido();
+  }
+}
+
+function soltarCono() {
+  if (conoArrastrando) {
+    conoArrastrando.classList.remove('cono-dragging');
+    conoArrastrando = null;
+  }
+  document.removeEventListener('mousemove', arrastrarCono);
+  document.removeEventListener('mouseup', soltarCono);
+}
+
+/* --- Verificar si un cono está en zona de descarte --- */
+function estaEnZonaDescarte(cono) {
+  const cx = parseFloat(cono.getAttribute('cx'));
+  const cy = parseFloat(cono.getAttribute('cy'));
+  
+  return ZONAS_DESCARTE.some(zona => 
+    cx >= zona.x && cx <= zona.x + zona.width &&
+    cy >= zona.y && cy <= zona.y + zona.height
+  );
+}
+
+/* --- Actualizar estado visual del cono (normal/descartado) --- */
+function actualizarEstadoConoDescarte(cono) {
+  if (estaEnZonaDescarte(cono)) {
+    cono.classList.add('cono-descartado');
+  } else {
+    cono.classList.remove('cono-descartado');
+  }
+}
+
+/* --- Toggle modo edición --- */
+function toggleModoEdicion() {
+  modoEdicion = !modoEdicion;
+  const boton = document.getElementById('toggleEdicion');
+  boton.textContent = modoEdicion ? 'Desactivar modo edición' : 'Activar modo edición';
+  
+  // Mostrar/ocultar zonas de descarte
+  document.querySelectorAll('.zona-descarte').forEach(zona => {
+    zona.style.display = modoEdicion ? 'block' : 'none';
+  });
+  
+  // Actualizar estado de todos los conos
+  document.querySelectorAll('#fixed-layer circle[id^="cono"]').forEach(cono => {
+    actualizarEstadoConoDescarte(cono);
+  });
+  
+  configurarConos();
+}
+
+/* --- Actualizar tamaño de cuadrícula --- */
+function actualizarCuadricula() {
+  TAMANO_CUADRICULA = parseInt(document.getElementById('tamanoCuadricula').value);
+  document.getElementById('valorCuadricula').textContent = TAMANO_CUADRICULA;
+}
+
+/* --- actualizar configuración --- */
+function actualizarConfiguracion() {
+    GROSOR_LINEAS = parseFloat(document.getElementById('grosorLineas').value);
+    GROSOR_BORDE_CONOS = parseFloat(document.getElementById('grosorBordeConos').value);
+    TAMANO_CONOS = parseFloat(document.getElementById('tamanoConos').value);
+    RADIO_OVERLAY = parseFloat(document.getElementById('radioOverlay').value);
+    TAMANO_TEXTO = parseFloat(document.getElementById('tamanoTexto').value);
+
+    document.getElementById('valorGrosor').textContent = GROSOR_LINEAS;
+    document.getElementById('valorBordeConos').textContent = GROSOR_BORDE_CONOS;
+    document.getElementById('valorConos').textContent = TAMANO_CONOS;
+    document.getElementById('valorOverlay').textContent = RADIO_OVERLAY;
+    document.getElementById('valorTexto').textContent = TAMANO_TEXTO;
+
+    // ACTUALIZAR overlays del recorrido (círculos alrededor de conos seleccionados)
+    document.querySelectorAll('#recorrido circle').forEach(circ => {
+        circ.setAttribute('r', RADIO_OVERLAY);
+        circ.setAttribute('stroke-width', GROSOR_LINEAS);
+    });
+
+    // ACTUALIZAR bordes de los conos
+    document.querySelectorAll('#fixed-layer circle[id^="cono"]').forEach(cono => {
+        cono.setAttribute('r', TAMANO_CONOS);
+        cono.setAttribute('stroke-width', GROSOR_BORDE_CONOS);
+    });
+
+    // ACTUALIZAR tamaño de texto de los números
+    document.querySelectorAll('#numeros text').forEach(texto => {
+        texto.setAttribute('font-size', TAMANO_TEXTO);
+    });
+
+    const circuloExt = document.getElementById('circuloExterior');
+    const circuloInt = document.getElementById('circuloInterior');
+    if (circuloExt && circuloInt) {
+        circuloExt.setAttribute('r', RADIO_OVERLAY);
+        circuloInt.setAttribute('r', RADIO_OVERLAY * 0.67);
+    }
+
+    document.querySelectorAll('#fixed-layer [stroke="#B03A94"]').forEach(el => {
+        el.setAttribute('stroke-width', GROSOR_LINEAS);
+    });
+
+    document.querySelectorAll('#lineas line').forEach(linea => {
+        linea.setAttribute('stroke-width', GROSOR_LINEAS);
+    });
+
+    // Forzar actualización completa del recorrido si hay conos seleccionados
+    const tieneRecorrido = Array.from(campos).slice(0, NUMERO_PUNTOS).some(campo => campo.value);
+    if (tieneRecorrido) {
+        // Guardar el estado actual
+        const valoresActuales = campos.map(c => c.value);
+        
+        // Limpiar temporalmente (esto activará actualizarRecorrido a través de los listeners)
+        campos.forEach(c => c.value = '');
+        
+        // Restaurar inmediatamente en el siguiente ciclo de evento
+        setTimeout(() => {
+            campos.forEach((c, i) => {
+                if (i < valoresActuales.length) c.value = valoresActuales[i];
+            });
+            // Forzar la actualización final
+            actualizarRecorrido();
+        }, 0);
+    }
+}
+
+/* --- Función para posicionar números --- */
+function posicionNumero(cono) {
+    // Posición simple: arriba a la derecha del cono
+    const SEPARACION = RADIO_OVERLAY + 2;
+    return {dx: SEPARACION, dy: -SEPARACION};
+}
+
+/* --- Función principal: actualizarRecorrido --- */
+function actualizarRecorrido(){
+    gLineas.innerHTML = '';
+    gRecorrido.innerHTML = '';
+    gNumeros.innerHTML = '';
+
+    document.querySelectorAll('#fixed-layer circle[id^="cono"]').forEach(c=>
+        c.classList.remove('cono-selected')
+    );
+
+    const ids = campos.map(c=>c.value.trim()).filter(Boolean);
+
+    const coords = ids.map(id=>{
+        const el = document.getElementById('cono'+id);
+        if(!el) return null;
+        return {
+            id,
+            x: parseFloat(el.getAttribute('cx')),
+            y: parseFloat(el.getAttribute('cy'))
+        };
+    }).filter(Boolean);
+
+    // Dibujar overlays y números
+    coords.forEach((p,i)=>{
+        const circ = document.createElementNS('http://www.w3.org/2000/svg','circle');
+        circ.setAttribute('cx', p.x);
+        circ.setAttribute('cy', p.y);
+        circ.setAttribute('r', RADIO_OVERLAY);
+        circ.setAttribute('stroke', '#B03A94');
+        circ.setAttribute('fill', 'none');
+        circ.setAttribute('stroke-width', GROSOR_LINEAS);
+        gRecorrido.appendChild(circ);
+
+        const {dx, dy} = posicionNumero(p);
+
+        const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+        txt.setAttribute('x', p.x + dx);
+        txt.setAttribute('y', p.y + dy);
+        txt.setAttribute('fill', '#B03A94');
+        txt.setAttribute('font-size', TAMANO_TEXTO);
+        txt.setAttribute('font-weight', '700');
+        txt.setAttribute('text-anchor', 'middle');
+        txt.setAttribute('dominant-baseline', 'middle');
+        txt.textContent = String(i+1);
+        gNumeros.appendChild(txt);
+
+        const base = document.getElementById('cono'+p.id);
+        if(base) base.classList.add('cono-selected');
+    });
+
+    // Línea desde el triángulo de inicio al primer cono
+    if(coords.length > 0){
+        const pTri = {x:100, y:368.95}; // Punta del triángulo
+        const first = coords[0];
+        const dx = first.x - pTri.x;
+        const dy = first.y - pTri.y;
+        const d = Math.hypot(dx,dy) || 1;
+
+        const x2 = first.x - (RADIO_OVERLAY * dx / d);
+        const y2 = first.y - (RADIO_OVERLAY * dy / d);
+
+        const l = document.createElementNS('http://www.w3.org/2000/svg','line');
+        l.setAttribute('x1', pTri.x);
+        l.setAttribute('y1', pTri.y);
+        l.setAttribute('x2', x2);
+        l.setAttribute('y2', y2);
+        l.setAttribute('stroke', '#B03A94');
+        l.setAttribute('stroke-width', GROSOR_LINEAS);
+        l.setAttribute('stroke-linecap','round');
+        gLineas.appendChild(l);
+    }
+
+    // Líneas entre conos
+    for(let i=0;i<coords.length-1;i++){
+        const a = coords[i], b = coords[i+1];
+        const dx = b.x-a.x, dy = b.y-a.y;
+        const d = Math.hypot(dx,dy) || 1;
+
+        const ox = RADIO_OVERLAY * dx/d;
+        const oy = RADIO_OVERLAY * dy/d;
+
+        const x1 = a.x + ox;
+        const y1 = a.y + oy;
+        const x2 = b.x - ox;
+        const y2 = b.y - oy;
+
+        const l = document.createElementNS('http://www.w3.org/2000/svg','line');
+        l.setAttribute('x1', x1);
+        l.setAttribute('y1', y1);
+        l.setAttribute('x2', x2);
+        l.setAttribute('y2', y2);
+        l.setAttribute('stroke', '#B03A94');
+        l.setAttribute('stroke-width', GROSOR_LINEAS);
+        l.setAttribute('stroke-linecap','round');
+        gLineas.appendChild(l);
+    }
+
+    // Línea final hacia el círculo central
+    if(coords.length > 0){
+        const last = coords[coords.length-1];
+        const cx=100, cy=25; // Posición del círculo central
+        const dx=cx-last.x, dy=cy-last.y;
+        const d=Math.hypot(dx,dy) || 1;
+
+        const x1 = last.x + (RADIO_OVERLAY * dx/d);
+        const y1 = last.y + (RADIO_OVERLAY * dy/d);
+        const x2 = cx - (RADIO_OVERLAY * dx/d);
+        const y2 = cy - (RADIO_OVERLAY * dy/d);
+
+        const lf = document.createElementNS('http://www.w3.org/2000/svg','line');
+        lf.setAttribute('x1', x1);
+        lf.setAttribute('y1', y1);
+        lf.setAttribute('x2', x2);
+        lf.setAttribute('y2', y2);
+        lf.setAttribute('stroke', '#B03A94');
+        lf.setAttribute('stroke-width', GROSOR_LINEAS);
+        lf.setAttribute('stroke-linecap','round');
+        gLineas.appendChild(lf);
+    }
+}
+// ******** FIN BLOQUE 4 ********
+
+<!-- ******** INICIO BLOQUE 5: Recorrido Aleatorio ******** -->
+/* --- Generar recorrido aleatorio --- */
+function generarRecorridoAleatorio() {
+  const todosConos = Array.from(document.querySelectorAll('#fixed-layer circle[id^="cono"]'))
+    .map(cono => cono.id.replace('cono', ''))
+    .filter(id => {
+      const cono = document.getElementById('cono' + id);
+      return !estaEnZonaDescarte(cono); // Excluir conos en zona de descarte
+    });
+  
+  // Mezclar array
+  for (let i = todosConos.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [todosConos[i], todosConos[j]] = [todosConos[j], todosConos[i]];
+  }
+  
+  // Tomar el número especificado de conos
+  const conosSeleccionados = todosConos.slice(0, NUMERO_PUNTOS);
+  
+  // Limpiar campos y aplicar nuevos valores
+  campos.forEach(c => c.value = '');
+  conosSeleccionados.forEach((id, index) => {
+    if (index < campos.length) {
+      campos[index].value = id;
+    }
+  });
+
+  actualizarRecorrido();
+}
+// ******** FIN BLOQUE 5 ********
+
+<!-- ******** INICIO BLOQUE 6: Exportación ******** -->
+/* --- Exportar SVG Mediano (56%) --- */
+function exportarmediano() {
+    const SCALE = 0.56;
+
+    const nombreInput = document.getElementById('nombre').value.trim();
+    const nombre = nombreInput ? nombreInput + "_56" : "recorrido_56";
+
+    const original = document.getElementById('mapa');
+
+    const svgNS = "http://www.w3.org/2000/svg";
+    const nuevo = document.createElementNS(svgNS, "svg");
+
+    nuevo.setAttribute("width", (200 * SCALE) + "mm");
+    nuevo.setAttribute("height", (400 * SCALE) + "mm");
+    nuevo.setAttribute("viewBox", `0 0 ${200 * SCALE} ${400 * SCALE}`);
+
+    function esc(n) { return parseFloat(n) * SCALE; }
+
+    function copiarNodo(nodo, destinoPadre) {
+        if (nodo.nodeType === 3) return;
+
+        const clon = document.createElementNS(svgNS, nodo.nodeName);
+
+        for (const attr of nodo.attributes || []) {
+            let name = attr.name;
+            let val = attr.value;
+
+            if (name === "data-noexport") return;
+
+            if (["cx","cy","x","y","r","x1","y1","x2","y2"].includes(name)) {
+                clon.setAttribute(name, esc(val));
+                continue;
+            }
+
+            if (name === "stroke-width") {
+                if (nodo.id && nodo.id.startsWith("cono")) {
+                    clon.setAttribute(name, esc(GROSOR_BORDE_CONOS));
+                } else {
+                    clon.setAttribute(name, esc(val));
+                }
+                continue;
+            }
+
+            if (name === "font-size") {
+                clon.setAttribute(name, esc(val));
+                continue;
+            }
+
+            if (name === "points") {
+                const puntos = val.trim().split(" ").map(par => {
+                    const [px, py] = par.split(",");
+                    return esc(px) + "," + esc(py);
+                });
+                clon.setAttribute("points", puntos.join(" "));
+                continue;
+            }
+
+            clon.setAttribute(name, val);
+        }
+
+        if (nodo.textContent && nodo.children.length === 0) {
+            clon.textContent = nodo.textContent;
+        }
+
+        destinoPadre.appendChild(clon);
+
+        for (const hijo of nodo.children) copiarNodo(hijo, clon);
+    }
+
+    const capas = ["fixed-layer", "lineas", "recorrido", "numeros"];
+
+    capas.forEach(id => {
+        const originalCapa = original.querySelector("#" + id);
+        if (!originalCapa) return;
+
+        const nuevaCapa = document.createElementNS(svgNS, "g");
+        nuevaCapa.setAttribute("id", id);
+
+        for (const nodo of originalCapa.children) {
+            copiarNodo(nodo, nuevaCapa);
+        }
+        nuevo.appendChild(nuevaCapa);
+    });
+
+    const xml = new XMLSerializer().serializeToString(nuevo);
+    const blob = new Blob([xml], {type:"image/svg+xml;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = nombre + ".svg";
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
+
+/* --- Exportar SVG Pequeño (40%) --- */
+function exportarpeque() {
+    const SCALE = 0.40;
+
+    const nombreInput = document.getElementById('nombre').value.trim();
+    const nombre = nombreInput ? nombreInput + "_40" : "recorrido_40";
+
+    const original = document.getElementById('mapa');
+
+    const svgNS = "http://www.w3.org/2000/svg";
+    const nuevo = document.createElementNS(svgNS, "svg");
+
+    nuevo.setAttribute("width", (200 * SCALE) + "mm");
+    nuevo.setAttribute("height", (400 * SCALE) + "mm");
+    nuevo.setAttribute("viewBox", `0 0 ${200 * SCALE} ${400 * SCALE}`);
+
+    function esc(n) { return parseFloat(n) * SCALE; }
+
+    function copiarNodo(nodo, destinoPadre) {
+        if (nodo.nodeType === 3) return;
+
+        const clon = document.createElementNS(svgNS, nodo.nodeName);
+
+        for (const attr of nodo.attributes || []) {
+            let name = attr.name;
+            let val = attr.value;
+
+            if (name === "data-noexport") return;
+
+            if (["cx","cy","x","y","r","x1","y1","x2","y2"].includes(name)) {
+                clon.setAttribute(name, esc(val));
+                continue;
+            }
+
+            if (name === "stroke-width") {
+                if (nodo.id && nodo.id.startsWith("cono")) {
+                    clon.setAttribute(name, esc(GROSOR_BORDE_CONOS));
+                } else {
+                    clon.setAttribute(name, esc(val));
+                }
+                continue;
+            }
+
+            if (name === "font-size") {
+                clon.setAttribute(name, esc(val));
+                continue;
+            }
+
+            if (name === "points") {
+                const puntos = val.trim().split(" ").map(par => {
+                    const [px, py] = par.split(",");
+                    return esc(px) + "," + esc(py);
+                });
+                clon.setAttribute("points", puntos.join(" "));
+                continue;
+            }
+
+            clon.setAttribute(name, val);
+        }
+
+        if (nodo.textContent && nodo.children.length === 0) {
+            clon.textContent = nodo.textContent;
+        }
+
+        destinoPadre.appendChild(clon);
+
+        for (const hijo of nodo.children) copiarNodo(hijo, clon);
+    }
+
+    const capas = ["fixed-layer", "lineas", "recorrido", "numeros"];
+
+    capas.forEach(id => {
+        const originalCapa = original.querySelector("#" + id);
+        if (!originalCapa) return;
+
+        const nuevaCapa = document.createElementNS(svgNS, "g");
+        nuevaCapa.setAttribute("id", id);
+
+        for (const nodo of originalCapa.children) {
+            copiarNodo(nodo, nuevaCapa);
+        }
+        nuevo.appendChild(nuevaCapa);
+    });
+
+    const xml = new XMLSerializer().serializeToString(nuevo);
+    const blob = new Blob([xml], {type:"image/svg+xml;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = nombre + ".svg";
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
+
+/* --- Función de exportación 100% --- */
+function exportarSVG(){
+  const nombreInput = document.getElementById('nombre').value.trim();
+  const nombre = nombreInput ? nombreInput : 'recorrido';
+  const original = document.getElementById('mapa');
+  const clone = original.cloneNode(true);
+
+  // Eliminar elementos no exportables
+  clone.querySelectorAll('[data-noexport="true"]').forEach(n => n.remove());
+  clone.querySelectorAll('.zona-descarte').forEach(n => n.remove());
+  
+  // Eliminar conos que estén en zona de descarte
+  clone.querySelectorAll('circle[id^="cono"]').forEach(cono => {
+    const cx = parseFloat(cono.getAttribute('cx'));
+    const cy = parseFloat(cono.getAttribute('cy'));
+    
+    const enZonaDescarte = ZONAS_DESCARTE.some(zona => 
+      cx >= zona.x && cx <= zona.x + zona.width &&
+      cy >= zona.y && cy <= zona.y + zona.height
+    );
+    
+    if (enZonaDescarte) {
+      cono.remove();
+    } else {
+      cono.setAttribute('stroke-width', GROSOR_BORDE_CONOS);
+    }
+  });
+
+  clone.setAttribute('width', '200mm');
+  clone.setAttribute('height', '400mm');
+  clone.setAttribute('viewBox', '0 0 200 400');
+
+  const xml = new XMLSerializer().serializeToString(clone);
+  const blob = new Blob([xml], {type: 'image/svg+xml;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${nombre}.svg`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* --- Exportar SVG con IDs de conos --- */
+function exportarSVGConIDs() {
+  const nombreInput = document.getElementById('nombre').value.trim();
+  const nombre = nombreInput ? nombreInput + "_conIDs" : "recorrido_conIDs";
+  const original = document.getElementById('mapa');
+  const clone = original.cloneNode(true);
+
+  // Eliminar elementos no exportables
+  clone.querySelectorAll('[data-noexport="true"]').forEach(n => n.remove());
+  clone.querySelectorAll('.zona-descarte').forEach(n => n.remove());
+  
+  // Eliminar conos que estén en zona de descarte
+  clone.querySelectorAll('circle[id^="cono"]').forEach(cono => {
+    const cx = parseFloat(cono.getAttribute('cx'));
+    const cy = parseFloat(cono.getAttribute('cy'));
+    
+    const enZonaDescarte = ZONAS_DESCARTE.some(zona => 
+      cx >= zona.x && cx <= zona.x + zona.width &&
+      cy >= zona.y && cy <= zona.y + zona.height
+    );
+    
+    if (enZonaDescarte) {
+      cono.remove();
+    } else {
+      cono.setAttribute('stroke-width', GROSOR_BORDE_CONOS);
+      
+      // Añadir texto con el ID del cono
+      const id = cono.id.replace('cono', '');
+      const texto = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      texto.setAttribute('x', parseFloat(cono.getAttribute('cx')));
+      texto.setAttribute('y', parseFloat(cono.getAttribute('cy')) - 8);
+      texto.setAttribute('fill', '#000');
+      texto.setAttribute('font-size', '6');
+      texto.setAttribute('font-weight', 'bold');
+      texto.setAttribute('text-anchor', 'middle');
+      texto.setAttribute('dominant-baseline', 'middle');
+      texto.textContent = id;
+      
+      cono.parentNode.insertBefore(texto, cono.nextSibling);
+    }
+  });
+
+  clone.setAttribute('width', '200mm');
+  clone.setAttribute('height', '400mm');
+  clone.setAttribute('viewBox', '0 0 200 400');
+
+  const xml = new XMLSerializer().serializeToString(clone);
+  const blob = new Blob([xml], {type: 'image/svg+xml;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${nombre}.svg`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Inicializar
+configurarConos();
+actualizarCuadricula();
+
+// Inicializar: si hay valores en inputs, actualizar recorrido
+if (document.querySelectorAll('#camposConos input').some(i => i.value)) {
+    actualizarRecorrido();
+}
+</script>
+</body>
+</html>

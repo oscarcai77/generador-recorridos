@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Recorridos</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            height: 100vh;
+            background: #f7f7f9;
+        }
+        
+        /* Menú lateral */
+        #menu-lateral {
+            width: 300px;
+            background: #2c3e50;
+            color: white;
+            transition: all 0.3s ease;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        
+        #menu-lateral.cerrado {
+            width: 70px;
+        }
+        
+        .menu-header {
+            padding: 25px;
+            border-bottom: 1px solid #34495e;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .menu-header h2 {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+        
+        .toggle-menu {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+        
+        .toggle-menu:hover {
+            background: #34495e;
+        }
+        
+        .menu-opciones {
+            padding: 25px 0;
+        }
+        
+        .btn-menu {
+            width: 100%;
+            padding: 18px 25px;
+            background: none;
+            border: none;
+            color: white;
+            text-align: left;
+            cursor: pointer;
+            font-size: 1.3rem;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .btn-menu:hover {
+            background: #34495e;
+            padding-left: 30px;
+        }
+        
+        .btn-menu.activo {
+            background: #B03A94;
+            font-weight: 600;
+        }
+        
+        .btn-icono {
+            font-size: 1.4rem;
+            min-width: 30px;
+        }
+        
+        .btn-texto {
+            font-size: 1.3rem;
+        }
+        
+        /* Contenido principal */
+        #contenido-principal {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #iframe-contenido {
+            flex: 1;
+            border: none;
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Estilos cuando el menú está cerrado */
+        .menu-cerrado .btn-texto {
+            display: none;
+        }
+        
+        .menu-cerrado .menu-header {
+            justify-content: center;
+            padding: 20px 10px;
+        }
+        
+        .menu-cerrado .menu-header h2 {
+            display: none;
+        }
+        
+        .menu-cerrado .btn-menu {
+            padding: 18px 20px;
+            justify-content: center;
+        }
+        
+        .menu-cerrado .btn-menu:hover {
+            padding-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Menú lateral -->
+    <div id="menu-lateral">
+        <div class="menu-header">
+            <h2 class="btn-texto">Generador de Recorridos</h2>
+            <button class="toggle-menu" onclick="toggleMenu()">☰</button>
+        </div>
+        
+        <div class="menu-opciones">
+            <button class="btn-menu activo" onclick="cargarContenido('Recorridos 3x3.html')">
+                <span class="btn-icono">🗺️</span>
+                <span class="btn-texto">Visualización 3x3</span>
+            </button>
+            <button class="btn-menu" onclick="cargarContenido('Recorridos 4x4.html')">
+                <span class="btn-icono">🗾</span>
+                <span class="btn-texto">Visualización 4x4</span>
+            </button>
+            <button class="btn-menu" onclick="cargarContenido('Recorridos campo.html')">
+                <span class="btn-icono">⚽</span>
+                <span class="btn-texto">Campo</span>
+            </button>
+            <!-- Puedes añadir más opciones aquí -->
+        </div>
+    </div>
+    
+    <!-- Contenido principal -->
+    <div id="contenido-principal">
+        <iframe id="iframe-contenido" src="Recorridos 3x3.html"></iframe>
+    </div>
+
+    <script>
+        function toggleMenu() {
+            const menu = document.getElementById('menu-lateral');
+            menu.classList.toggle('cerrado');
+            document.body.classList.toggle('menu-cerrado');
+        }
+        
+        function cargarContenido(archivo) {
+            // Actualizar botones activos
+            document.querySelectorAll('.btn-menu').forEach(btn => {
+                btn.classList.remove('activo');
+            });
+            event.currentTarget.classList.add('activo');
+            
+            // Cargar contenido
+            document.getElementById('iframe-contenido').src = archivo;
+            
+            // Si el menú está cerrado, abrirlo al seleccionar una opción
+            const menu = document.getElementById('menu-lateral');
+            if (menu.classList.contains('cerrado')) {
+                toggleMenu();
+            }
+        }
+        
+        // Cargar por defecto el 3x3
+        window.onload = function() {
+            document.getElementById('iframe-contenido').src = 'Recorridos 3x3.html';
+        }
+    </script>
+</body>
+</html>

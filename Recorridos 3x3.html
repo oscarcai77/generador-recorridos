@@ -1,0 +1,1062 @@
+<!--    BLOQUE 1: HTML + CSS principal
+        BLOQUE 2: SVG con elementos fijos
+        BLOQUE 3: JavaScript básico (variables, listeners)
+        BLOQUE 4: Funciones de actualización y dibujo
+        BLOQUE 5: Recorrido aleatorio
+        BLOQUE 6: Exportación
+-->
+
+
+<!-- ******** INICIO BLOQUE 1 ******** -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Recorridos de orientación — Versión final</title>
+<style>
+  :root{ --violeta:#B03A94; --bg:#f7f7f9; --panel-bg:rgba(255,255,255,0.95) }
+  body{
+    font-family: "Segoe UI", sans-serif;
+    margin:0;
+    padding:1rem;
+    display:flex;
+    gap:1.5rem;
+    align-items:flex-start;
+    background: var(--bg);
+  }
+  #panel{
+    width: 400px;
+    background: var(--panel-bg);
+    padding: 1.3rem;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  }
+  h2{ 
+    margin: 0 0 0.9rem 0; 
+    font-size: 1.3rem;
+  }
+  label{ 
+    font-size: 1.1rem;
+    margin-top: 0.9rem; 
+    display: block;
+  }
+  input[type="text"], #listaConos, select { 
+    width: 100%; 
+    box-sizing: border-box; 
+    padding: 9px 11px;
+    margin-top: 8px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 1.1rem;
+  }
+  .row { display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+  .small { 
+    padding: 9px 13px;
+    font-size: 1.1rem;
+    border-radius: 8px;
+    border: 0;
+    background: var(--violeta);
+    color: #fff;
+    cursor: pointer;
+  }
+  button{ 
+    background: var(--violeta);
+    color: #fff;
+    border: 0;
+    padding: 11px 15px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+  svg{ max-width:920px; width:100%; height:auto; border:1px solid #ccc; background:white; }
+  .cono-pointer{ cursor:pointer }
+  .cono-selected{ stroke:#000; stroke-width:0.9; fill-opacity:0.85; }
+  hr{ border:0; border-top:1px solid #eee; margin:10px 0; }
+</style>
+</head>
+<body>
+
+  <div id="panel">
+    <h2>Recorrido de orientación</h2>
+
+    <label>Introducir conos separados por comas</label>
+    <input id="listaConos" placeholder="Ej: 42,39,58,62,33,40,52">
+    <div class="row">
+      <button class="small" onclick="aplicarLista()">Aplicar lista</button>
+      <button class="small" onclick="borrarRecorrido()">Borrar recorrido</button>
+      <button class="small" onclick="generarRecorridoAleatorio()" id="botonAleatorio">Recorrido aleatorio (7)</button>
+      <button class="small" onclick="copiarNumerosRecorrido()">Copiar números recorrido</button>
+    </div>
+
+    <label>Conos seleccionados (máx. 12) — editable</label>
+    <div id="camposConos" style="margin-top:6px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px;">
+      <input id="id1" type="text" oninput="actualizarRecorrido()" style="font-size: 0.9rem; padding: 4px 6px;">
+      <input id="id2" type="text" oninput="actualizarRecorrido()" style="font-size: 0.9rem; padding: 4px 6px;">
+      <input id="id3" type="text" oninput="actualizarRecorrido()" style="font-size: 0.9rem; padding: 4px 6px;">
+      <input id="id4" type="text" oninput="actualizarRecorrido()" style="font-size: 0.9rem; padding: 4px 6px;">
+      <input id="id5" type="text" oninput="actualizarRecorrido()" style="font-size: 0.9rem; padding: 4px 6px;">
+      <input id="id6" type="text" oninput="actualizarRecorrido()" style="font-size: 0.9rem; padding: 4px 6px;">
+      <input id="id7" type="text" oninput="actualizarRecorrido()" style="font-size: 0.9rem; padding: 4px 6px;">
+      <input id="id8" type="text" oninput="actualizarRecorrido()" style="font-size: 0.9rem; padding: 4px 6px;">
+      <input id="id9" type="text" oninput="actualizarRecorrido()" style="font-size: 0.9rem; padding: 4px 6px;">
+      <input id="id10" type="text" oninput="actualizarRecorrido()" style="font-size: 0.9rem; padding: 4px 6px;">
+      <input id="id11" type="text" oninput="actualizarRecorrido()" style="font-size: 0.9rem; padding: 4px 6px;">
+      <input id="id12" type="text" oninput="actualizarRecorrido()" style="font-size: 0.9rem; padding: 4px 6px;">
+    </div>
+
+    <label>Triángulo de inicio</label>
+    <select id="trianguloInicio" onchange="actualizarRecorrido()">
+      <option value="">Sin triángulo</option>
+      <option value="A">A (Sur)</option>
+      <option value="B">B (Oeste)</option>
+      <option value="C">C (Norte)</option>
+      <option value="D">D (Este)</option>
+    </select>
+
+    <div class="row" style="margin-top:8px; align-items:center;">
+      <input id="toggleFondo" type="checkbox" disabled>
+      <label for="toggleFondo" style="margin:0">Mostrar fondo (Fondo_3x3.png/jpg)</label>
+    </div>
+
+    <hr>
+
+    <label>Nombre del recorrido</label>
+    <input id="nombre" placeholder="Ej: Recorrido_A">
+
+    <!-- Panel de configuración desplegable -->
+    <details style="margin-top: 12px; padding: 8px; background: #f8f9fa; border-radius: 6px;">
+      <summary style="cursor: pointer; font-weight: bold; padding: 4px; font-size: 1.5rem;">⚙️ Configuración avanzada</summary>
+      
+      <div style="margin-top: 8px;">
+        <label>Número de puntos: <span id="valorPuntos">7</span></label>
+        <input type="range" id="numeroPuntos" min="5" max="12" step="1" value="7" onchange="actualizarNumeroPuntos()" style="width: 100%;">
+      </div>
+
+      <div style="margin-top: 8px;">
+        <label>Grosor líneas (1.3): <span id="valorGrosor">1.3</span>mm</label>
+        <input type="range" id="grosorLineas" min="0.5" max="2.5" step="0.1" value="1.3" onchange="actualizarConfiguracion()" style="width: 100%;">
+      </div>
+      
+      <div style="margin-top: 8px;">
+        <label>Grosor bordes conos (0.2): <span id="valorBordeConos">0.2</span>mm</label>
+        <input type="range" id="grosorBordeConos" min="0.1" max="1" step="0.1" value="0.2" onchange="actualizarConfiguracion()" style="width: 100%;">
+      </div>
+      
+      <div style="margin-top: 8px;">
+        <label>Tamaño conos (3.5): <span id="valorConos">3.5</span>mm</label>
+        <input type="range" id="tamanoConos" min="2" max="6" step="0.5" value="3.5" onchange="actualizarConfiguracion()" style="width: 100%;">
+      </div>
+      
+      <div style="margin-top: 8px;">
+        <label>Radio overlay (8): <span id="valorOverlay">8</span>mm</label>
+        <input type="range" id="radioOverlay" min="5" max="12" step="0.5" value="8" onchange="actualizarConfiguracion()" style="width: 100%;">
+      </div>
+      
+      <div style="margin-top: 8px;">
+        <label>Tamaño texto números (9): <span id="valorTexto">9</span>px</label>
+        <input type="range" id="tamanoTexto" min="6" max="12" step="0.5" value="9" onchange="actualizarConfiguracion()" style="width: 100%;">
+      </div>
+    </details>
+
+    <h2 style="margin-top:12px; font-size:1.2rem">Exportar a SVG</h2>
+    <div class="row">
+      <button class="small" onclick="exportarSVG()">Exportar a SVG</button>
+      <button class="small" onclick="exportarmediano()">SVG Mediano</button>
+      <button class="small" onclick="exportarpeque()">SVG Pequeño</button>
+    </div>
+  </div>
+<!-- ******** FIN BLOQUE 1 ******** -->
+
+
+
+
+
+
+
+
+<!-- ******** INICIO BLOQUE 2 ******** -->
+  <!-- SVG con lienzo de 200x200mm -->
+  <svg id="mapa" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="800">
+    <!-- Imagen de fondo dentro del SVG -->
+    <image id="bgImage" x="0" y="0" width="200" height="200" style="display:none;" data-noexport="true" opacity="0.45" />
+
+    <g id="fixed-layer">
+      <!-- Doble círculo central - PROPORCIONAL -->
+      <circle cx="100" cy="100" r="8" stroke="#B03A94" stroke-width="1.3" fill="none" id="circuloExterior"/>
+      <circle cx="100" cy="100" r="5.4" stroke="#B03A94" stroke-width="1.3" fill="none" id="circuloInterior"/>
+
+      <!-- Triángulos A-D -->
+      <!-- Triángulo A (abajo) -->
+      <polygon points="91.25,197.95 100,183.95 108.75,197.95" stroke="#B03A94" stroke-width="1.3" fill="none"/>
+      <text x="97.5" y="195.5" font-size="7" font-weight="700" fill="#000">A</text>
+
+      <!-- Triángulo B (izquierda) - GIRO 90° IZQUIERDA -->
+      <polygon points="2.05,91.25 2.05,108.75 16.05,100" stroke="#B03A94" stroke-width="1.3" fill="none"/>
+      <text x="4" y="101.7" font-size="7" font-weight="700" fill="#000">B</text>
+
+      <!-- Triángulo C (arriba) -->
+      <polygon points="91.25,2.05 108.75,2.05 100,16.05" stroke="#B03A94" stroke-width="1.3" fill="none"/>
+      <text x="97.8" y="9.5" font-size="7" font-weight="700" fill="#000">C</text>
+
+      <!-- Triángulo D (derecha) - GIRO 90° DERECHA -->
+      <polygon points="197.95,91.25 183.95,100 197.95,108.75" stroke="#B03A94" stroke-width="1.3" fill="none"/>
+      <text x="191.5" y="101.7" font-size="7" font-weight="700" fill="#000">D</text>
+
+      <!-- Conos: Superior izquierdo -->
+      <circle id="cono24" cx="25" cy="25" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono51" cx="45" cy="25" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono91" cx="65" cy="25" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono30" cx="25" cy="45" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono70" cx="45" cy="45" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono40" cx="65" cy="45" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono55" cx="25" cy="65" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono15" cx="45" cy="65" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono96" cx="65" cy="65" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+
+      <!-- Conos: Superior derecho -->
+      <circle id="cono29" cx="135" cy="25" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono79" cx="155" cy="25" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono62" cx="175" cy="25" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono45" cx="135" cy="45" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono18" cx="155" cy="45" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono85" cx="175" cy="45" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono68" cx="135" cy="65" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono39" cx="155" cy="65" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono33" cx="175" cy="65" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+
+      <!-- Conos: Inferior izquierdo -->
+      <circle id="cono27" cx="25" cy="135" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono82" cx="45" cy="135" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono59" cx="65" cy="135" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono48" cx="25" cy="155" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono13" cx="45" cy="155" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono89" cx="65" cy="155" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono71" cx="25" cy="175" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono37" cx="45" cy="175" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono22" cx="65" cy="175" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+
+      <!-- Conos: Inferior derecho -->
+      <circle id="cono31" cx="135" cy="135" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono76" cx="155" cy="135" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono64" cx="175" cy="135" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono52" cx="135" cy="155" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono11" cx="155" cy="155" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono94" cx="175" cy="155" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono73" cx="135" cy="175" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono43" cx="155" cy="175" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+      <circle id="cono87" cx="175" cy="175" r="3.5" fill="deepskyblue" stroke="black" stroke-width="0.2"/>
+    </g>
+
+    <!-- Capas dinámicas encima -->
+    <g id="lineas"></g>
+    <g id="recorrido"></g>
+    <g id="numeros"></g>
+  </svg>
+<!-- ******** FIN BLOQUE 2 ******** -->
+
+
+<!-- ******** INICIO BLOQUE 3 ******** -->
+<script>
+// Variables globales para configuración - VALORES ORIGINALES
+let GROSOR_LINEAS = 1.3;
+let GROSOR_BORDE_CONOS = 0.2;
+let TAMANO_CONOS = 3.5;
+let RADIO_OVERLAY = 8;
+let TAMANO_TEXTO = 9;
+let NUMERO_PUNTOS = 7;
+
+/* --- referencias --- */
+const campos = Array.from({length:12}, (_,i)=>document.getElementById('id'+(i+1)));
+const gLineas = document.getElementById('lineas');
+const gRecorrido = document.getElementById('recorrido');
+const gNumeros = document.getElementById('numeros');
+const toggleFondo = document.getElementById('toggleFondo');
+const bgImage = document.getElementById('bgImage');
+
+/* --- buscar fondo.png/jpg y activar checkbox solo si existe --- */
+(function probeBackground(){
+  function test(src){
+    return new Promise(res=>{
+      const img = new Image();
+      img.onload = ()=>res(src);
+      img.onerror = ()=>res(null);
+      img.src = src + '?_=' + Date.now();
+    });
+  }
+  Promise.all([test('Fondo_3x3.png'), test('Fondo_3x3.jpg')]).then(([png,jpg])=>{
+    const found = png || jpg;
+    if(found){
+      bgImage.setAttribute('href', found);
+      toggleFondo.disabled = false;
+      toggleFondo.addEventListener('change', ()=> {
+        bgImage.style.display = toggleFondo.checked ? 'block' : 'none';
+      });
+    } else {
+      toggleFondo.disabled = true;
+    }
+  });
+})();
+
+/* --- ayuda: comprobar duplicado en campos --- */
+function estaSeleccionado(id){ return campos.some(c => c.value === String(id)); }
+
+/* --- aplicar lista de coma (botón) --- */
+function aplicarLista(){
+  const lista = document.getElementById('listaConos').value.trim();
+  if(!lista) return;
+  const valores = lista.split(',').map(s=>s.trim()).filter(Boolean).slice(0, NUMERO_PUNTOS);
+  campos.forEach((c,i)=> c.value = valores[i] || '');
+  actualizarRecorrido();
+}
+
+/* --- añadir listener a todos los conos de la capa fija (clic para seleccionar) --- */
+document.querySelectorAll('#fixed-layer circle[id^="cono"]').forEach(cono=>{
+  cono.classList.add('cono-pointer');
+  cono.addEventListener('click', ()=>{
+    const id = cono.id.replace('cono','');
+    if(estaSeleccionado(id)) return;
+    const idx = campos.findIndex(c => !c.value && c.style.display !== 'none');
+    if(idx === -1){ alert('Ya has seleccionado los ' + NUMERO_PUNTOS + ' conos máximos.'); return; }
+    campos[idx].value = id;
+    actualizarRecorrido();
+  });
+});
+
+/* --- borrar recorrido y campos --- */
+function borrarRecorrido(){
+  campos.forEach(c=>c.value='');
+  document.getElementById('trianguloInicio').value = '';
+  gLineas.innerHTML = '';
+  gRecorrido.innerHTML = '';
+  gNumeros.innerHTML = '';
+  document.querySelectorAll('#fixed-layer circle[id^="cono"]').forEach(c=>c.classList.remove('cono-selected'));
+}
+
+/* --- Copiar IDs de conos del recorrido al portapapeles --- */
+function copiarNumerosRecorrido() {
+    const ids = campos.map(c => c.value.trim()).filter(Boolean);
+    if (ids.length === 0) {
+        alert('No hay recorrido para copiar');
+        return;
+    }
+    
+    // Separar por tabs - funciona en Excel y Word
+    const idsConos = ids.join('\t');
+    
+    // Copiar al portapapeles
+    navigator.clipboard.writeText(idsConos)
+        .then(() => {
+            alert(`IDs copiados: ${ids.join(', ')}\n\nEn Excel: Se pegan en celdas horizontales\nEn Word: Se crea una tabla de una fila`);
+        })
+        .catch(err => {
+            console.error('Error al copiar: ', err);
+            // Fallback para navegadores antiguos
+            const textArea = document.createElement('textarea');
+            textArea.value = idsConos;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            alert(`IDs copiados: ${ids.join(', ')}\n\nEn Excel: Se pegan en celdas horizontales\nEn Word: Se crea una fila con tabulaciones`);
+        });
+}
+
+/* --- Actualizar número de puntos --- */
+function actualizarNumeroPuntos() {
+    NUMERO_PUNTOS = parseInt(document.getElementById('numeroPuntos').value);
+    document.getElementById('valorPuntos').textContent = NUMERO_PUNTOS;
+    
+    // Mostrar/ocultar campos según el número seleccionado
+    for (let i = 1; i <= 12; i++) {
+        const campo = document.getElementById('id' + i);
+        if (campo) {
+            campo.style.display = i <= NUMERO_PUNTOS ? 'block' : 'none';
+            if (i > NUMERO_PUNTOS) campo.value = ''; // Limpiar campos ocultos
+        }
+    }
+    
+    // Si hay valores en campos visibles, actualizar el recorrido
+    if (Array.from(campos).slice(0, NUMERO_PUNTOS).some(campo => campo.value)) {
+        actualizarRecorrido();
+    }
+    actualizarBotonAleatorio();
+}
+
+/* --- Actualizar texto del botón aleatorio --- */
+function actualizarBotonAleatorio() {
+    const boton = document.getElementById('botonAleatorio');
+    if (boton) {
+        boton.textContent = 'Recorrido aleatorio (' + NUMERO_PUNTOS + ')';
+    }
+}
+
+// Inicializar botón al cargar la página
+actualizarBotonAleatorio();
+
+// ******** FIN BLOQUE 3 ********
+
+
+
+
+
+
+
+
+
+
+// ******** INICIO BLOQUE 4 ******** 
+
+/* --- actualizar configuración --- */
+function actualizarConfiguracion() {
+    GROSOR_LINEAS = parseFloat(document.getElementById('grosorLineas').value);
+    GROSOR_BORDE_CONOS = parseFloat(document.getElementById('grosorBordeConos').value);
+    TAMANO_CONOS = parseFloat(document.getElementById('tamanoConos').value);
+    RADIO_OVERLAY = parseFloat(document.getElementById('radioOverlay').value);
+    TAMANO_TEXTO = parseFloat(document.getElementById('tamanoTexto').value);
+
+    document.getElementById('valorGrosor').textContent = GROSOR_LINEAS;
+    document.getElementById('valorBordeConos').textContent = GROSOR_BORDE_CONOS;
+    document.getElementById('valorConos').textContent = TAMANO_CONOS;
+    document.getElementById('valorOverlay').textContent = RADIO_OVERLAY;
+    document.getElementById('valorTexto').textContent = TAMANO_TEXTO;
+
+    // ACTUALIZAR overlays del recorrido (círculos alrededor de conos seleccionados)
+    document.querySelectorAll('#recorrido circle').forEach(circ => {
+        circ.setAttribute('r', RADIO_OVERLAY);
+        circ.setAttribute('stroke-width', GROSOR_LINEAS);
+    });
+
+    // ACTUALIZAR bordes de los conos
+    document.querySelectorAll('#fixed-layer circle[id^="cono"]').forEach(cono => {
+        cono.setAttribute('r', TAMANO_CONOS);
+        cono.setAttribute('stroke-width', GROSOR_BORDE_CONOS);
+    });
+
+    // ACTUALIZAR tamaño de texto de los números
+    document.querySelectorAll('#numeros text').forEach(texto => {
+        texto.setAttribute('font-size', TAMANO_TEXTO);
+    });
+
+    const circuloExt = document.getElementById('circuloExterior');
+    const circuloInt = document.getElementById('circuloInterior');
+    if (circuloExt && circuloInt) {
+        circuloExt.setAttribute('r', RADIO_OVERLAY);
+        circuloInt.setAttribute('r', RADIO_OVERLAY * 0.67);
+    }
+
+    document.querySelectorAll('#fixed-layer [stroke="#B03A94"]').forEach(el => {
+        el.setAttribute('stroke-width', GROSOR_LINEAS);
+    });
+
+    document.querySelectorAll('#lineas line').forEach(linea => {
+        linea.setAttribute('stroke-width', GROSOR_LINEAS);
+    });
+
+    // OPCIÓN 1: Forzar actualización completa del recorrido si hay conos seleccionados
+    const tieneRecorrido = Array.from(campos).slice(0, NUMERO_PUNTOS).some(campo => campo.value);
+    if (tieneRecorrido) {
+        // Guardar el estado actual
+        const valoresActuales = campos.map(c => c.value);
+        const trianguloActual = document.getElementById('trianguloInicio').value;
+        
+        // Limpiar temporalmente (esto activará actualizarRecorrido a través de los listeners)
+        campos.forEach(c => c.value = '');
+        
+        // Restaurar inmediatamente en el siguiente ciclo de evento
+        setTimeout(() => {
+            campos.forEach((c, i) => {
+                if (i < valoresActuales.length) c.value = valoresActuales[i];
+            });
+            document.getElementById('trianguloInicio').value = trianguloActual;
+            // Forzar la actualización final
+            actualizarRecorrido();
+        }, 0);
+    }
+}
+
+/* ------------------------------------------------------------- */
+/*       FUNCIÓN posicionNumero() con separación DIFERENCIADA    */
+/* ------------------------------------------------------------- */
+
+// Mapa de posiciones reales de cada cono dentro de su cuadrante 3×3
+// (0 a 8). Si un cono no está mapeado, se le asigna orientación ↑.
+const mapaPosiciones = {
+    // superior izquierdo
+    24:0, 51:1, 91:2,
+    30:3, 70:4, 40:5,
+    55:6, 15:7, 96:8,
+
+    // superior derecho
+    29:0, 79:1, 62:2,
+    45:3, 18:4, 85:5,
+    68:6, 39:7, 33:8,
+
+    // inferior izquierdo
+    27:0, 82:1, 59:2,
+    48:3, 13:4, 89:5,
+    71:6, 37:7, 22:8,
+
+    // inferior derecho
+    31:0, 57:1, 44:2,
+    61:3, 48:4, 36:5,
+    40:6, 64:7, 52:8
+};
+
+// vectores dirección para cada posición 0–8
+// ¡OJO! POSICIÓN 4 (centro) → ↗ (0.7, -0.7)
+const vectores = {
+    0:{dx:-1, dy:-1}, // ↖
+    1:{dx: 0, dy:-1}, // ↑
+    2:{dx: 1, dy:-1}, // ↗
+    3:{dx:-1, dy: 0}, // ←
+    4:{dx: 0.7, dy:-0.7}, // ↗ (dirección especial del centro)
+    5:{dx: 1, dy: 0}, // →
+    6:{dx:-1, dy: 1}, // ↙
+    7:{dx: 0, dy: 1}, // ↓
+    8:{dx: 1, dy: 1}  // ↘
+};
+
+function posicionNumero(conoId) {
+    const id = Number(conoId);
+    const pos = mapaPosiciones[id] ?? 1;
+
+    const v = vectores[pos];
+
+    // SEPARACIÓN ESPECÍFICA - AUMENTAR PARA POSICIÓN 6 y 7
+    const factoresSeparacion = {
+        0: 1.0, // ↖ - normal
+        1: 1.0, // ↑ - normal  
+        2: 1.0, // ↗ - normal
+        3: 1.0, // ← - normal
+        4: 1.0, // ↗ - normal (centro especial)
+        5: 1.0, // → - normal
+        6: 1.2, // ↙ - 20% más de separación para evitar que toque
+        7: 1.3, // ↓ - 30% más de separación para el cono abajo-centro
+        8: 1.0  // ↘ - normal
+    };
+
+    const factor = factoresSeparacion[pos] || 1.0;
+    const SEPARACION = ((RADIO_OVERLAY * 0.18) + (TAMANO_TEXTO * 0.38)) * factor;
+
+    // normalización de vectores diagonales
+    const norm = Math.hypot(v.dx, v.dy) || 1;
+    const dx = (RADIO_OVERLAY + SEPARACION) * (v.dx / norm);
+    const dy = (RADIO_OVERLAY + SEPARACION) * (v.dy / norm);
+
+    return {dx, dy};
+}
+
+/* ------------------------------------------------------------- */
+/*               FUNCIÓN PRINCIPAL: actualizarRecorrido()        */
+/* ------------------------------------------------------------- */
+
+function actualizarRecorrido(){
+    gLineas.innerHTML = '';
+    gRecorrido.innerHTML = '';
+    gNumeros.innerHTML = '';
+
+    document.querySelectorAll('#fixed-layer circle[id^="cono"]').forEach(c=>
+        c.classList.remove('cono-selected')
+    );
+
+    const ids = campos.map(c=>c.value.trim()).filter(Boolean);
+
+    const coords = ids.map(id=>{
+        const el = document.getElementById('cono'+id);
+        if(!el) return null;
+        return {
+            id,
+            x: parseFloat(el.getAttribute('cx')),
+            y: parseFloat(el.getAttribute('cy'))
+        };
+    }).filter(Boolean);
+
+
+    // ----------- DIBUJO DE OVERLAYS Y NÚMEROS -------------
+    coords.forEach((p,i)=>{
+        const circ = document.createElementNS('http://www.w3.org/2000/svg','circle');
+        circ.setAttribute('cx', p.x);
+        circ.setAttribute('cy', p.y);
+        circ.setAttribute('r', RADIO_OVERLAY);
+        circ.setAttribute('stroke', '#B03A94');
+        circ.setAttribute('fill', 'none');
+        circ.setAttribute('stroke-width', GROSOR_LINEAS);
+        gRecorrido.appendChild(circ);
+
+        const {dx, dy} = posicionNumero(p.id);
+
+        const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+        txt.setAttribute('x', p.x + dx);
+        txt.setAttribute('y', p.y + dy);
+        txt.setAttribute('fill', '#B03A94');
+        txt.setAttribute('font-size', TAMANO_TEXTO);
+        txt.setAttribute('font-weight', '700');
+        txt.setAttribute('text-anchor', 'middle');
+        txt.setAttribute('dominant-baseline', 'middle');
+        txt.textContent = String(i+1);
+        gNumeros.appendChild(txt);
+
+        const base = document.getElementById('cono'+p.id);
+        if(base) base.classList.add('cono-selected');
+    });
+
+
+    // -------- LÍNEA DESDE TRIÁNGULO DE INICIO ------------
+    const tri = document.getElementById('trianguloInicio').value;
+    if(tri && coords.length > 0){
+        let pTri;
+        switch(tri){
+            case 'A': pTri={x:100,y:183.95}; break; // Punta del triángulo A (hacia arriba/centro)
+            case 'B': pTri={x:16.05,y:100}; break;  // Punta del triángulo B (hacia derecha/centro)
+            case 'C': pTri={x:100,y:16.05}; break;  // Punta del triángulo C (hacia abajo/centro)
+            case 'D': pTri={x:183.95,y:100}; break; // Punta del triángulo D (hacia izquierda/centro)
+        }
+
+        const first = coords[0];
+        const dx = first.x - pTri.x;
+        const dy = first.y - pTri.y;
+        const d = Math.hypot(dx,dy) || 1;
+
+        const x2 = first.x - (RADIO_OVERLAY * dx / d);
+        const y2 = first.y - (RADIO_OVERLAY * dy / d);
+
+        const l = document.createElementNS('http://www.w3.org/2000/svg','line');
+        l.setAttribute('x1', pTri.x);
+        l.setAttribute('y1', pTri.y);
+        l.setAttribute('x2', x2);
+        l.setAttribute('y2', y2);
+        l.setAttribute('stroke', '#B03A94');
+        l.setAttribute('stroke-width', GROSOR_LINEAS);
+        l.setAttribute('stroke-linecap','round');
+        gLineas.appendChild(l);
+    }
+
+
+    // ------------- LÍNEAS ENTRE CONOS ----------------
+    for(let i=0;i<coords.length-1;i++){
+        const a = coords[i], b = coords[i+1];
+        const dx = b.x-a.x, dy = b.y-a.y;
+        const d = Math.hypot(dx,dy) || 1;
+
+        const ox = RADIO_OVERLAY * dx/d;
+        const oy = RADIO_OVERLAY * dy/d;
+
+        const x1 = a.x + ox;
+        const y1 = a.y + oy;
+        const x2 = b.x - ox;
+        const y2 = b.y - oy;
+
+        const l = document.createElementNS('http://www.w3.org/2000/svg','line');
+        l.setAttribute('x1', x1);
+        l.setAttribute('y1', y1);
+        l.setAttribute('x2', x2);
+        l.setAttribute('y2', y2);
+        l.setAttribute('stroke', '#B03A94');
+        l.setAttribute('stroke-width', GROSOR_LINEAS);
+        l.setAttribute('stroke-linecap','round');
+        gLineas.appendChild(l);
+    }
+
+
+    // --------- LÍNEA FINAL HACIA EL CÍRCULO CENTRAL ----------
+    if(coords.length > 0){
+        const last = coords[coords.length-1];
+        const cx=100, cy=100;
+        const dx=cx-last.x, dy=cy-last.y;
+        const d=Math.hypot(dx,dy) || 1;
+
+        const x1 = last.x + (RADIO_OVERLAY * dx/d);
+        const y1 = last.y + (RADIO_OVERLAY * dy/d);
+        const x2 = cx - (RADIO_OVERLAY * dx/d); // Termina en el círculo exterior
+        const y2 = cy - (RADIO_OVERLAY * dy/d); // Termina en el círculo exterior
+
+        const lf = document.createElementNS('http://www.w3.org/2000/svg','line');
+        lf.setAttribute('x1', x1);
+        lf.setAttribute('y1', y1);
+        lf.setAttribute('x2', x2);
+        lf.setAttribute('y2', y2);
+        lf.setAttribute('stroke', '#B03A94');
+        lf.setAttribute('stroke-width', GROSOR_LINEAS);
+        lf.setAttribute('stroke-linecap','round');
+        gLineas.appendChild(lf);
+    }
+}
+// ******** FIN BLOQUE 4 ******** 
+
+
+
+
+
+
+
+
+
+
+// ******** INICIO BLOQUE 5 ********
+/* --- Generar recorrido aleatorio adaptado (3x3) --- */
+function generarRecorridoAleatorio() {
+  // Definir cuadrantes y sus conos
+  const cuadrantes = {
+    superiorIzquierdo: [24, 51, 91, 30, 70, 40, 55, 15, 96],
+    superiorDerecho: [29, 79, 62, 45, 18, 85, 68, 39, 33],
+    inferiorIzquierdo: [27, 82, 59, 48, 13, 89, 71, 37, 22],
+    inferiorDerecho: [31, 76, 64, 52, 11, 94, 73, 43, 87]
+  };
+  
+  // Mapeo de posiciones dentro de cada cuadrante (3x3 grid)
+  const posiciones = {
+    0: [0, 0], // esquina superior izquierda
+    1: [1, 0], // centro superior
+    2: [2, 0], // esquina superior derecha
+    3: [0, 1], // centro izquierda
+    4: [1, 1], // centro
+    5: [2, 1], // centro derecha
+    6: [0, 2], // esquina inferior izquierda
+    7: [1, 2], // centro inferior
+    8: [2, 2]  // esquina inferior derecha
+  };
+
+  // Función para verificar si dos posiciones son adyacentes
+  function sonAdyacentes(pos1, pos2) {
+    const [x1, y1] = posiciones[pos1];
+    const [x2, y2] = posiciones[pos2];
+    return Math.abs(x1 - x2) <= 1 && Math.abs(y1 - y2) <= 1;
+  }
+
+  let conosSeleccionados = [];
+  let posicionesUsadas = {
+    superiorIzquierdo: new Set(),
+    superiorDerecho: new Set(),
+    inferiorIzquierdo: new Set(),
+    inferiorDerecho: new Set()
+  };
+
+  // PRIMERO: Garantizar al menos 1 cono de cada cuadrante
+  Object.keys(cuadrantes).forEach(cuadrante => {
+    const conosDisponibles = [...cuadrantes[cuadrante]];
+    
+    // Mezclar array aleatoriamente
+    for (let i = conosDisponibles.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [conosDisponibles[i], conosDisponibles[j]] = [conosDisponibles[j], conosDisponibles[i]];
+    }
+    
+    // Seleccionar al menos 1 cono de este cuadrante
+    if (conosDisponibles.length > 0) {
+      const conoSeleccionado = conosDisponibles[0];
+      const posicionCono = cuadrantes[cuadrante].indexOf(conoSeleccionado);
+      
+      conosSeleccionados.push(conoSeleccionado);
+      posicionesUsadas[cuadrante].add(posicionCono);
+      
+      // Remover el cono seleccionado de disponibles
+      conosDisponibles.shift();
+    }
+  });
+
+  // SEGUNDO: Completar hasta NUMERO_PUNTOS conos máximo (distribuyendo entre cuadrantes)
+  const cuadrantesArray = Object.keys(cuadrantes);
+  let totalConos = conosSeleccionados.length;
+  
+  while (totalConos < NUMERO_PUNTOS && cuadrantesArray.some(c => cuadrantes[c].length > 0)) {
+    // Seleccionar cuadrante aleatorio para añadir otro cono
+    const cuadranteAleatorio = cuadrantesArray[Math.floor(Math.random() * cuadrantesArray.length)];
+    const conosDisponiblesEnCuadrante = [...cuadrantes[cuadranteAleatorio]].filter(cono => 
+      !conosSeleccionados.includes(cono)
+    );
+    
+    if (conosDisponiblesEnCuadrante.length > 0) {
+      // Mezclar disponibles
+      for (let i = conosDisponiblesEnCuadrante.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [conosDisponiblesEnCuadrante[i], conosDisponiblesEnCuadrante[j]] = 
+        [conosDisponiblesEnCuadrante[j], conosDisponiblesEnCuadrante[i]];
+      }
+      
+      let conoValido = false;
+      let intentos = 0;
+      
+      while (!conoValido && intentos < conosDisponiblesEnCuadrante.length) {
+        const conoAleatorio = conosDisponiblesEnCuadrante[intentos];
+        const posicionCono = cuadrantes[cuadranteAleatorio].indexOf(conoAleatorio);
+        
+        // Verificar que no sea adyacente a ningún cono ya seleccionado en este cuadrante
+        const esAdyacente = Array.from(posicionesUsadas[cuadranteAleatorio]).some(posicionExistente => {
+          return sonAdyacentes(posicionCono, posicionExistente);
+        });
+        
+        if (!esAdyacente) {
+          conosSeleccionados.push(conoAleatorio);
+          posicionesUsadas[cuadranteAleatorio].add(posicionCono);
+          conoValido = true;
+          totalConos++;
+        } else {
+          intentos++;
+        }
+      }
+    }
+  }
+
+  // Mezclar el orden final de los conos
+  for (let i = conosSeleccionados.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [conosSeleccionados[i], conosSeleccionados[j]] = [conosSeleccionados[j], conosSeleccionados[i]];
+  }
+  
+  // Limitar a máximo NUMERO_PUNTOS conos
+  conosSeleccionados = conosSeleccionados.slice(0, NUMERO_PUNTOS);
+
+  // Aplicar a los campos
+  campos.forEach((campo, index) => {
+    campo.value = conosSeleccionados[index] || '';
+  });
+
+  // Seleccionar triángulo de inicio aleatorio
+  const triangulos = ['A', 'B', 'C', 'D'];
+  const trianguloAleatorio = triangulos[Math.floor(Math.random() * triangulos.length)];
+  document.getElementById('trianguloInicio').value = trianguloAleatorio;
+
+  actualizarRecorrido();
+}
+// ******** FIN BLOQUE 5 ********
+
+
+
+
+
+
+
+
+
+
+// ******** INICIO BLOQUE 6 ********
+/* --- Exportar SVG - TAMAÑO FIJO 200mm --- */
+function exportarSVG(){
+  const nombreInput = document.getElementById('nombre').value.trim();
+  const nombre = nombreInput ? nombreInput : 'recorrido';
+  const original = document.getElementById('mapa');
+  const clone = original.cloneNode(true);
+
+  // eliminar cualquier elemento marcado data-noexport (ej. image de fondo)
+  clone.querySelectorAll('[data-noexport="true"]').forEach(n => n.remove());
+
+  // Aplicar GROSOR_BORDE_CONOS actual a los conos en la exportación
+  clone.querySelectorAll('circle[id^="cono"]').forEach(cono => {
+    cono.setAttribute('stroke-width', GROSOR_BORDE_CONOS);
+  });
+
+  // Tamaño fijo 200mm - SIN ESCALADO
+  clone.setAttribute('width', '200mm');
+  clone.setAttribute('height', '200mm');
+  clone.setAttribute('viewBox', '0 0 200 200');
+
+  const xml = new XMLSerializer().serializeToString(clone);
+  const blob = new Blob([xml], {type: 'image/svg+xml;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${nombre}.svg`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* --- Exportar SVG al 61% con recalculo completo --- */
+function exportarmediano() {
+    const SCALE = 0.61;
+
+    const nombreInput = document.getElementById('nombre').value.trim();
+    const nombre = nombreInput ? nombreInput + "_61" : "recorrido_61";
+
+    const original = document.getElementById('mapa');
+
+    const svgNS = "http://www.w3.org/2000/svg";
+    const nuevo = document.createElementNS(svgNS, "svg");
+
+    nuevo.setAttribute("width", (200 * SCALE) + "mm");
+    nuevo.setAttribute("height", (200 * SCALE) + "mm");
+    nuevo.setAttribute("viewBox", `0 0 ${200 * SCALE} ${200 * SCALE}`);
+
+    function esc(n) { return parseFloat(n) * SCALE; }
+
+    function copiarNodo(nodo, destinoPadre) {
+        if (nodo.nodeType === 3) return;
+
+        const clon = document.createElementNS(svgNS, nodo.nodeName);
+
+        for (const attr of nodo.attributes || []) {
+            let name = attr.name;
+            let val = attr.value;
+
+            if (name === "data-noexport") return;
+
+            if (["cx","cy","x","y","r","x1","y1","x2","y2"].includes(name)) {
+                clon.setAttribute(name, esc(val));
+                continue;
+            }
+
+            if (name === "stroke-width") {
+                // Para conos, usar GROSOR_BORDE_CONOS actual en lugar del valor fijo
+                if (nodo.id && nodo.id.startsWith("cono")) {
+                    clon.setAttribute(name, esc(GROSOR_BORDE_CONOS));
+                } else {
+                    clon.setAttribute(name, esc(val));
+                }
+                continue;
+            }
+
+            if (name === "font-size") {
+                clon.setAttribute(name, esc(val));
+                continue;
+            }
+
+            if (name === "points") {
+                const puntos = val.trim().split(" ").map(par => {
+                    const [px, py] = par.split(",");
+                    return esc(px) + "," + esc(py);
+                });
+                clon.setAttribute("points", puntos.join(" "));
+                continue;
+            }
+
+            clon.setAttribute(name, val);
+        }
+
+        if (nodo.textContent && nodo.children.length === 0) {
+            clon.textContent = nodo.textContent;
+        }
+
+        destinoPadre.appendChild(clon);
+
+        for (const hijo of nodo.children) copiarNodo(hijo, clon);
+    }
+
+    const capas = ["fixed-layer", "lineas", "recorrido", "numeros"];
+
+    capas.forEach(id => {
+        const originalCapa = original.querySelector("#" + id);
+        if (!originalCapa) return;
+
+        const nuevaCapa = document.createElementNS(svgNS, "g");
+        nuevaCapa.setAttribute("id", id);
+
+        for (const nodo of originalCapa.children) {
+            copiarNodo(nodo, nuevaCapa);
+        }
+        nuevo.appendChild(nuevaCapa);
+    });
+
+    const xml = new XMLSerializer().serializeToString(nuevo);
+    const blob = new Blob([xml], {type:"image/svg+xml;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = nombre + ".svg";
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
+/* --- Exportar SVG al 40% con recalculo completo --- */
+function exportarpeque() {
+    const SCALE = 0.26;
+
+    const nombreInput = document.getElementById('nombre').value.trim();
+    const nombre = nombreInput ? nombreInput + "_40" : "recorrido_40";
+
+    const original = document.getElementById('mapa');
+
+    const svgNS = "http://www.w3.org/2000/svg";
+    const nuevo = document.createElementNS(svgNS, "svg");
+
+    nuevo.setAttribute("width", (200 * SCALE) + "mm");
+    nuevo.setAttribute("height", (200 * SCALE) + "mm");
+    nuevo.setAttribute("viewBox", `0 0 ${200 * SCALE} ${200 * SCALE}`);
+
+    function esc(n) { return parseFloat(n) * SCALE; }
+
+    function copiarNodo(nodo, destinoPadre) {
+        if (nodo.nodeType === 3) return;
+
+        const clon = document.createElementNS(svgNS, nodo.nodeName);
+
+        for (const attr of nodo.attributes || []) {
+            let name = attr.name;
+            let val = attr.value;
+
+            if (name === "data-noexport") return;
+
+            if (["cx","cy","x","y","r","x1","y1","x2","y2"].includes(name)) {
+                clon.setAttribute(name, esc(val));
+                continue;
+            }
+
+            if (name === "stroke-width") {
+                if (nodo.id && nodo.id.startsWith("cono")) {
+                    clon.setAttribute(name, esc(GROSOR_BORDE_CONOS));
+                } else {
+                    clon.setAttribute(name, esc(val));
+                }
+                continue;
+            }
+
+            if (name === "font-size") {
+                clon.setAttribute(name, esc(val));
+                continue;
+            }
+
+            if (name === "points") {
+                const puntos = val.trim().split(" ").map(par => {
+                    const [px, py] = par.split(",");
+                    return esc(px) + "," + esc(py);
+                });
+                clon.setAttribute("points", puntos.join(" "));
+                continue;
+            }
+
+            clon.setAttribute(name, val);
+        }
+
+        if (nodo.textContent && nodo.children.length === 0) {
+            clon.textContent = nodo.textContent;
+        }
+
+        destinoPadre.appendChild(clon);
+
+        for (const hijo of nodo.children) copiarNodo(hijo, clon);
+    }
+
+    const capas = ["fixed-layer", "lineas", "recorrido", "numeros"];
+
+    capas.forEach(id => {
+        const originalCapa = original.querySelector("#" + id);
+        if (!originalCapa) return;
+
+        const nuevaCapa = document.createElementNS(svgNS, "g");
+        nuevaCapa.setAttribute("id", id);
+
+        for (const nodo of originalCapa.children) {
+            copiarNodo(nodo, nuevaCapa);
+        }
+        nuevo.appendChild(nuevaCapa);
+    });
+
+    const xml = new XMLSerializer().serializeToString(nuevo);
+    const blob = new Blob([xml], {type:"image/svg+xml;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = nombre + ".svg";
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
+
+// Inicializar: si hay valores en inputs, actualizar recorrido
+if (document.querySelectorAll('#camposConos input').some(i => i.value)) {
+    actualizarRecorrido();
+}
+</script>
+</body>
+</html>

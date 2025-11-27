@@ -1,0 +1,22 @@
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de entorno
+.env
+.env.local
+
+# Archivos de log
+*.log
+
+# Archivos temporales
+*.tmp
+*.temp
+
+# Archivos de fondo (opcionales, si no quieres subirlos)
+Fondo_3x3.png
+Fondo_3x3.jpg
+Fondo_4x4.png
+Fondo_4x4.jpg
+Fondo_campo.png
+Fondo_campo.jpg
