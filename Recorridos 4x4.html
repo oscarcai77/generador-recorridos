@@ -117,7 +117,7 @@
 
     <div class="row" style="margin-top:8px; align-items:center;">
       <input id="toggleFondo" type="checkbox" disabled>
-      <label for="toggleFondo" style="margin:0">Mostrar fondo (Fondo_4x4.png/jpg)</label>
+      <label for="toggleFondo" style="margin:0">Mostrar fondo (Fondo_*.png/jpg/jpeg/gif/webp/svg/pdf)</label>
     </div>
 
     <hr>
@@ -153,9 +153,18 @@
         <input type="range" id="radioOverlay" min="5" max="12" step="0.5" value="8" onchange="actualizarConfiguracion()" style="width: 100%;">
       </div>
       
-      <div style="margin-top: 8px;">
+         <div style="margin-top: 8px;">
         <label>Tamaño texto números (9): <span id="valorTexto">9</span>px</label>
         <input type="range" id="tamanoTexto" min="6" max="12" step="0.5" value="9" onchange="actualizarConfiguracion()" style="width: 100%;">
+      </div>
+
+      <!-- Selector de forma de conos -->
+      <div style="margin-top: 8px;">
+        <label>Forma de los conos: </label>
+        <select id="formaConos" onchange="cambiarFormaConos()" style="width: 100%; padding: 6px; margin-top: 4px;">
+          <option value="circulo">Círculo</option>
+          <option value="x">X</option>
+        </select>
       </div>
     </details>
 
@@ -188,8 +197,7 @@
 <!-- ******** INICIO BLOQUE 2 ******** -->
   <!-- ******** BLOQUE SVG 220x220 (4x4) CORREGIDO ******** -->
   <svg id="mapa" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 220" width="880">
-    <image id="bgImage" x="0" y="0" width="220" height="220" style="display:none;" data-noexport="true" opacity="0.45" />
-
+    <image id="bgImage" x="0" y="0" width="200" height="400" style="display:none;" data-noexport="true" opacity="0.45" preserveAspectRatio="xMidYMid meet" />
     <g id="fixed-layer">
       <!-- Círculo central (centrado en 110,110) -->
       <circle cx="110" cy="110" r="8" stroke="#B03A94" stroke-width="1.3" fill="none" id="circuloExterior"/>
@@ -344,6 +352,19 @@ let RADIO_OVERLAY = 8;
 let TAMANO_TEXTO = 9;
 let NUMERO_PUNTOS = 7;
 
+// Variable para forma de conos
+let FORMA_CONOS = 'circulo'; // 'circulo' o 'x'
+
+// Función para cambiar forma de conos
+function cambiarFormaConos() {
+  FORMA_CONOS = document.getElementById('formaConos').value;
+  actualizarFormaConos();
+  // Si hay recorrido, actualizar para que se vean los cambios
+  if (Array.from(campos).slice(0, NUMERO_PUNTOS).some(campo => campo.value)) {
+    actualizarRecorrido();
+  }
+}
+
 /* --- referencias --- */
 const campos = Array.from({length:12}, (_,i)=>document.getElementById('id'+(i+1)));
 const gLineas = document.getElementById('lineas');
@@ -354,6 +375,9 @@ const bgImage = document.getElementById('bgImage');
 
 /* --- buscar fondo.png/jpg y activar checkbox solo si existe --- */
 (function probeBackground(){
+  const formatos = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'pdf'];
+  const baseName = 'Fondo_4x4';
+  
   function test(src){
     return new Promise(res=>{
       const img = new Image();
@@ -362,10 +386,12 @@ const bgImage = document.getElementById('bgImage');
       img.src = src + '?_=' + Date.now();
     });
   }
-  Promise.all([test('Fondo_4x4.png'), test('Fondo_4x4.jpg')]).then(([png,jpg])=>{
-    const found = png || jpg;
+  
+  Promise.all(formatos.map(ext => test(`${baseName}.${ext}`))).then(results => {
+    const found = results.find(src => src !== null);
     if(found){
       bgImage.setAttribute('href', found);
+      bgImage.setAttribute('preserveAspectRatio', 'xMidYMid meet');
       toggleFondo.disabled = false;
       toggleFondo.addEventListener('change', ()=> {
         bgImage.style.display = toggleFondo.checked ? 'block' : 'none';
@@ -375,7 +401,6 @@ const bgImage = document.getElementById('bgImage');
     }
   });
 })();
-
 /* --- ayuda: comprobar duplicado en campos --- */
 function estaSeleccionado(id){ return campos.some(c => c.value === String(id)); }
 
@@ -490,6 +515,7 @@ actualizarBotonAleatorio();
 
 
 // ******** INICIO BLOQUE 4 ******** 
+
 /* --- actualizar configuración --- */
 function actualizarConfiguracion() {
     GROSOR_LINEAS = parseFloat(document.getElementById('grosorLineas').value);
@@ -510,10 +536,45 @@ function actualizarConfiguracion() {
         circ.setAttribute('stroke-width', GROSOR_LINEAS);
     });
 
-    // ACTUALIZAR bordes de los conos
-    document.querySelectorAll('#fixed-layer circle[id^="cono"]').forEach(cono => {
-        cono.setAttribute('r', TAMANO_CONOS);
-        cono.setAttribute('stroke-width', GROSOR_BORDE_CONOS);
+    // ACTUALIZAR bordes de los conos (tanto círculos como X)
+    document.querySelectorAll('#fixed-layer [id^="cono"]').forEach(cono => {
+        if (cono.tagName === 'circle') {
+            // Actualizar círculos
+            cono.setAttribute('r', TAMANO_CONOS);
+            cono.setAttribute('stroke-width', GROSOR_BORDE_CONOS);
+        } else if (cono.tagName === 'path' && FORMA_CONOS === 'x') {
+            // Actualizar X - recrear con nuevo tamaño
+            const id = cono.id.replace('cono', '');
+            const tamañoX = TAMANO_CONOS * 0.7;
+            
+            // Obtener posición actual
+            let cx, cy;
+            if (cono.hasAttribute('data-cx') && cono.hasAttribute('data-cy')) {
+                cx = parseFloat(cono.getAttribute('data-cx'));
+                cy = parseFloat(cono.getAttribute('data-cy'));
+            } else {
+                const d = cono.getAttribute('d');
+                const puntos = d.split(' ');
+                const primerPunto = puntos[0].replace('M', '').split(',');
+                cx = parseFloat(primerPunto[0]) + 2.5;
+                cy = parseFloat(primerPunto[1]) + 2.5;
+            }
+            
+            // Crear nueva X con tamaño actualizado
+            const nuevaX = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            nuevaX.id = 'cono' + id;
+            nuevaX.setAttribute('d', `M${cx-tamañoX},${cy-tamañoX} L${cx+tamañoX},${cy+tamañoX} M${cx+tamañoX},${cy-tamañoX} L${cx-tamañoX},${cy+tamañoX}`);
+            nuevaX.setAttribute('stroke', 'black');
+            nuevaX.setAttribute('stroke-width', '0.8');
+            nuevaX.setAttribute('stroke-linecap', 'round');
+            nuevaX.setAttribute('fill', 'none');
+            nuevaX.classList.add('cono-pointer');
+            nuevaX.setAttribute('data-cx', cx);
+            nuevaX.setAttribute('data-cy', cy);
+            
+            // Reemplazar la X antigua
+            cono.parentNode.replaceChild(nuevaX, cono);
+        }
     });
 
     // ACTUALIZAR tamaño de texto de los números
@@ -536,9 +597,9 @@ function actualizarConfiguracion() {
         linea.setAttribute('stroke-width', GROSOR_LINEAS);
     });
 
-    // OPCIÓN 1: Forzar actualización completa del recorrido si hay conos seleccionados
+    // SOLO actualizar recorrido si hay conos seleccionados y NO estamos en modo X
     const tieneRecorrido = Array.from(campos).slice(0, NUMERO_PUNTOS).some(campo => campo.value);
-    if (tieneRecorrido) {
+    if (tieneRecorrido && FORMA_CONOS === 'circulo') {
         // Guardar el estado actual
         const valoresActuales = campos.map(c => c.value);
         const trianguloActual = document.getElementById('trianguloInicio').value;
@@ -636,7 +697,7 @@ function actualizarRecorrido(){
     gRecorrido.innerHTML = '';
     gNumeros.innerHTML = '';
 
-    document.querySelectorAll('#fixed-layer circle[id^="cono"]').forEach(c=>
+    document.querySelectorAll('#fixed-layer [id^="cono"]').forEach(c=>
         c.classList.remove('cono-selected')
     );
 
@@ -645,10 +706,31 @@ function actualizarRecorrido(){
     const coords = ids.map(id=>{
         const el = document.getElementById('cono'+id);
         if(!el) return null;
+        
+        let x, y;
+        
+        if (el.tagName === 'circle') {
+            // Si es círculo, obtener cx y cy directamente
+            x = parseFloat(el.getAttribute('cx'));
+            y = parseFloat(el.getAttribute('cy'));
+        } else if (el.tagName === 'path') {
+            // Si es path (X), usar data-cx y data-cy o calcular desde 'd'
+            if (el.hasAttribute('data-cx') && el.hasAttribute('data-cy')) {
+                x = parseFloat(el.getAttribute('data-cx'));
+                y = parseFloat(el.getAttribute('data-cy'));
+            } else {
+                const d = el.getAttribute('d');
+                const puntos = d.split(' ');
+                const primerPunto = puntos[0].replace('M', '').split(',');
+                x = parseFloat(primerPunto[0]) + 2.5;
+                y = parseFloat(primerPunto[1]) + 2.5;
+            }
+        }
+        
         return {
             id,
-            x: parseFloat(el.getAttribute('cx')),
-            y: parseFloat(el.getAttribute('cy'))
+            x: x,
+            y: y
         };
     }).filter(Boolean);
 
@@ -760,8 +842,97 @@ function actualizarRecorrido(){
         gLineas.appendChild(lf);
     }
 }
-// ******** FIN BLOQUE 4 ******** 
 
+/* --- Actualizar forma visual de todos los conos --- */
+function actualizarFormaConos() {
+  // Guardar las posiciones de TODOS los conos antes de cambiar
+  const posiciones = [];
+  
+  document.querySelectorAll('#fixed-layer [id^="cono"]').forEach(cono => {
+    const id = cono.id.replace('cono', '');
+    
+    // Obtener posición actual (tanto para círculos como para paths)
+    let cx, cy;
+    
+    if (cono.tagName === 'circle') {
+      // Si es círculo, obtener cx y cy directamente
+      cx = cono.getAttribute('cx');
+      cy = cono.getAttribute('cy');
+    } else if (cono.tagName === 'path') {
+      // Si es path (X), usar los atributos data-cx y data-cy guardados
+      cx = cono.getAttribute('data-cx');
+      cy = cono.getAttribute('data-cy');
+      // Si no existen, calcular desde el atributo 'd'
+      if (!cx || !cy) {
+        const d = cono.getAttribute('d');
+        const puntos = d.split(' ');
+        const primerPunto = puntos[0].replace('M', '').split(',');
+        cx = parseFloat(primerPunto[0]) + 2.5; // Usar el tamaño fijo
+        cy = parseFloat(primerPunto[1]) + 2.5;
+      }
+    }
+    
+    posiciones.push({id, cx, cy});
+  });
+  
+  // Limpiar y recrear TODOS los conos
+  const fixedLayer = document.getElementById('fixed-layer');
+  
+  // Eliminar todos los conos actuales
+  document.querySelectorAll('#fixed-layer [id^="cono"]').forEach(cono => {
+    cono.remove();
+  });
+  
+  // Crear todos los conos nuevos con la forma seleccionada
+  posiciones.forEach(({id, cx, cy}) => {
+    const nuevoCono = FORMA_CONOS === 'x' 
+      ? crearConoX(id, cx, cy)
+      : crearConoCirculo(id, cx, cy);
+    
+    fixedLayer.appendChild(nuevoCono);
+  });
+  
+  // Reconfigurar listeners
+  configurarConos();
+}
+
+/* --- Crear cono tipo X --- */
+function crearConoX(id, cx, cy) {
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.id = 'cono' + id;
+  const x = parseFloat(cx);
+  const y = parseFloat(cy);
+  
+  // X con tamaño FIJO (no depende de TAMANO_CONOS que puede cambiar)
+  const tamañoFijo = 2.5; // Tamaño fijo para las X
+  path.setAttribute('d', `M${x-tamañoFijo},${y-tamañoFijo} L${x+tamañoFijo},${y+tamañoFijo} M${x+tamañoFijo},${y-tamañoFijo} L${x-tamañoFijo},${y+tamañoFijo}`);
+  path.setAttribute('stroke', 'black');
+  path.setAttribute('stroke-width', '0.8');
+  path.setAttribute('stroke-linecap', 'round');
+  path.setAttribute('fill', 'none');
+  path.classList.add('cono-pointer');
+  
+  // Guardar las coordenadas originales como atributos personalizados
+  path.setAttribute('data-cx', x);
+  path.setAttribute('data-cy', y);
+  
+  return path;
+}
+
+/* --- Crear cono tipo círculo --- */
+function crearConoCirculo(id, cx, cy) {
+  const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  circle.id = 'cono' + id;
+  circle.setAttribute('cx', cx);
+  circle.setAttribute('cy', cy);
+  circle.setAttribute('r', TAMANO_CONOS);
+  circle.setAttribute('fill', 'deepskyblue');
+  circle.setAttribute('stroke', 'black');
+  circle.setAttribute('stroke-width', '0.2');
+  circle.classList.add('cono-pointer');
+  return circle;
+}
+// ******** FIN BLOQUE 4 ******** 
 
 
 
