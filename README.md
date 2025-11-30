@@ -10,11 +10,11 @@ Sistema web para crear y exportar recorridos de orientación en formato SVG.
   - **Campo**: Campo rectangular con conos movibles
 
 - **Funcionalidades**:
-  - Selección manual de conos
+  - Selección manual de conos para generar recorridos
   - Generación de recorridos aleatorios
   - Exportación a SVG en 3 tamaños
   - Configuración avanzada de estilos
-  - Modo edición (solo en Campo)
+  - Modo edición (solo en Campo), donde se pueden cambiar la ubicación de conos y eliminar los que no interesen
 
 ## Estructura del Proyecto
 generador-recorridos/
