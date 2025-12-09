@@ -173,6 +173,7 @@
       <button class="small" onclick="exportarSVG()">Exportar a SVG</button>
       <button class="small" onclick="exportarmediano()">SVG Mediano</button>
       <button class="small" onclick="exportarpeque()">SVG Pequeño</button>
+      <button class="small" onclick="exportarSVGConIDs4x4()">SVG con IDs</button>
     </div>
   </div>
 
@@ -413,18 +414,35 @@ function aplicarLista(){
   actualizarRecorrido();
 }
 
-/* --- añadir listener a todos los conos de la capa fija (clic para seleccionar) --- */
-document.querySelectorAll('#fixed-layer circle[id^="cono"]').forEach(cono=>{
-  cono.classList.add('cono-pointer');
-  cono.addEventListener('click', ()=>{
-    const id = cono.id.replace('cono','');
-    if(estaSeleccionado(id)) return;
-    const idx = campos.findIndex(c => !c.value && c.style.display !== 'none');
-    if(idx === -1){ alert('Ya has seleccionado los ' + NUMERO_PUNTOS + ' conos máximos.'); return; }
-    campos[idx].value = id;
-    actualizarRecorrido();
+/* --- función para manejar clic en conos --- */
+function manejarClicCono4x4(event) {
+  const cono = event.target;
+  const id = cono.id.replace('cono', '');
+  if(estaSeleccionado(id)) return;
+  const idx = campos.findIndex(c => !c.value && c.style.display !== 'none');
+  if(idx === -1){ 
+    alert('Ya has seleccionado los ' + NUMERO_PUNTOS + ' conos máximos.'); 
+    return; 
+  }
+  campos[idx].value = id;
+  actualizarRecorrido();
+}
+
+/* --- configurar listeners para todos los conos --- */
+function configurarConos() {
+  document.querySelectorAll('#fixed-layer [id^="cono"]').forEach(cono => {
+    cono.classList.add('cono-pointer');
+    
+    // Eliminar listener anterior para evitar duplicados
+    cono.removeEventListener('click', manejarClicCono4x4);
+    
+    // Agregar nuevo listener
+    cono.addEventListener('click', manejarClicCono4x4);
   });
-});
+}
+
+// Configurar conos inicialmente
+configurarConos();
 
 /* --- borrar recorrido y campos --- */
 function borrarRecorrido(){
@@ -597,9 +615,9 @@ function actualizarConfiguracion() {
         linea.setAttribute('stroke-width', GROSOR_LINEAS);
     });
 
-    // SOLO actualizar recorrido si hay conos seleccionados y NO estamos en modo X
+    // SOLO actualizar recorrido si hay conos seleccionados
     const tieneRecorrido = Array.from(campos).slice(0, NUMERO_PUNTOS).some(campo => campo.value);
-    if (tieneRecorrido && FORMA_CONOS === 'circulo') {
+    if (tieneRecorrido) {
         // Guardar el estado actual
         const valoresActuales = campos.map(c => c.value);
         const trianguloActual = document.getElementById('trianguloInicio').value;
@@ -1052,6 +1070,9 @@ function generarRecorridoAleatorio() {
 
 
 // ******** INICIO BLOQUE 6 ********
+// Tamaño del mapa 4x4 (en mm)
+const MAP_SIZE = 220;
+
 /* --- Exportar SVG (220mm) --- */
 function exportarSVG(){
   const nombreInput = document.getElementById('nombre').value.trim();
@@ -1240,6 +1261,139 @@ function exportarpeque() {
     a.click();
     URL.revokeObjectURL(url);
 }
+
+/* --- Exportar SVG con TODOS los IDs de conos (4x4 para evaluación) --- */
+function exportarSVGConIDs4x4() {
+  const nombreInput = document.getElementById('nombre').value.trim();
+  const nombre = nombreInput ? nombreInput + "_todosIDs" : "recorrido4x4_todosIDs";
+  const original = document.getElementById('mapa');
+  const clone = original.cloneNode(true);
+  
+  // Tamaño del mapa 4x4 (220mm)
+  const MAP_SIZE = 220;
+  
+  // Eliminar elementos no exportables
+  clone.querySelectorAll('[data-noexport="true"]').forEach(n => n.remove());
+  
+  // Array para almacenar posiciones de textos y evitar solapamientos
+  const textosPosiciones = [];
+  
+  // Procesar TODOS los conos
+  clone.querySelectorAll('[id^="cono"]').forEach(cono => {
+    const id = cono.id.replace('cono', '');
+    
+    // Obtener posición del cono
+    let cx, cy;
+    
+    if (cono.tagName === 'circle') {
+      cx = parseFloat(cono.getAttribute('cx'));
+      cy = parseFloat(cono.getAttribute('cy'));
+      cono.setAttribute('stroke-width', GROSOR_BORDE_CONOS);
+    } else if (cono.tagName === 'path') {
+      // Para X, obtener posición desde data-* o calcular
+      if (cono.hasAttribute('data-cx') && cono.hasAttribute('data-cy')) {
+        cx = parseFloat(cono.getAttribute('data-cx'));
+        cy = parseFloat(cono.getAttribute('data-cy'));
+      } else {
+        const d = cono.getAttribute('d');
+        const puntos = d.split(' ');
+        const primerPunto = puntos[0].replace('M', '').split(',');
+        cx = parseFloat(primerPunto[0]) + 2.5;
+        cy = parseFloat(primerPunto[1]) + 2.5;
+      }
+      cono.setAttribute('stroke-width', '0.8');
+    }
+    
+    // Determinar mejor posición para el texto (evitar solapamientos)
+    const posicionesCandidatas = [
+      { dx: 0, dy: -10, anchor: 'middle', baseline: 'baseline' },   // Arriba
+      { dx: 12, dy: 0, anchor: 'start', baseline: 'middle' },       // Derecha
+      { dx: 0, dy: 12, anchor: 'middle', baseline: 'hanging' },     // Abajo
+      { dx: -12, dy: 0, anchor: 'end', baseline: 'middle' },        // Izquierda
+      { dx: 10, dy: -10, anchor: 'start', baseline: 'baseline' },   // Arriba-derecha
+      { dx: -10, dy: -10, anchor: 'end', baseline: 'baseline' },    // Arriba-izquierda
+      { dx: 10, dy: 10, anchor: 'start', baseline: 'hanging' },     // Abajo-derecha
+      { dx: -10, dy: 10, anchor: 'end', baseline: 'hanging' }       // Abajo-izquierda
+    ];
+    
+    // Encontrar posición que no solape
+    let posicionSeleccionada = null;
+    for (const pos of posicionesCandidatas) {
+      const textX = cx + pos.dx;
+      const textY = cy + pos.dy;
+      
+      // Verificar si esta posición solapa con otros textos
+      let solapa = false;
+      for (const tp of textosPosiciones) {
+        const distancia = Math.sqrt(Math.pow(textX - tp.x, 2) + Math.pow(textY - tp.y, 2));
+        if (distancia < 8) { // Radio mínimo de separación
+          solapa = true;
+          break;
+        }
+      }
+      
+      if (!solapa) {
+        posicionSeleccionada = { x: textX, y: textY, anchor: pos.anchor, baseline: pos.baseline };
+        textosPosiciones.push({ x: textX, y: textY });
+        break;
+      }
+    }
+    
+    // Si todas las posiciones solapan, usar la primera
+    if (!posicionSeleccionada) {
+      const pos = posicionesCandidatas[0];
+      posicionSeleccionada = { 
+        x: cx + pos.dx, 
+        y: cy + pos.dy, 
+        anchor: pos.anchor, 
+        baseline: pos.baseline 
+      };
+      textosPosiciones.push({ x: cx + pos.dx, y: cy + pos.dy });
+    }
+    
+    // Añadir texto con el ID del cono
+    const texto = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    texto.setAttribute('x', posicionSeleccionada.x);
+    texto.setAttribute('y', posicionSeleccionada.y);
+    texto.setAttribute('fill', '#000');
+    texto.setAttribute('font-size', '6');
+    texto.setAttribute('font-weight', 'bold');
+    texto.setAttribute('text-anchor', posicionSeleccionada.anchor);
+    texto.setAttribute('dominant-baseline', posicionSeleccionada.baseline);
+    texto.textContent = id;
+    
+    // Insertar después del cono
+    cono.parentNode.insertBefore(texto, cono.nextSibling);
+  });
+  
+  // Eliminar capas dinámicas (lineas, recorrido, numeros) para limpieza
+  const capasAEliminar = ['lineas', 'recorrido', 'numeros'];
+  capasAEliminar.forEach(id => {
+    const capa = clone.querySelector(`#${id}`);
+    if (capa) capa.remove();
+  });
+
+  clone.setAttribute('width', MAP_SIZE + 'mm');
+  clone.setAttribute('height', MAP_SIZE + 'mm');
+  clone.setAttribute('viewBox', `0 0 ${MAP_SIZE} ${MAP_SIZE}`);
+
+  const xml = new XMLSerializer().serializeToString(clone);
+  const blob = new Blob([xml], {type: 'image/svg+xml;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${nombre}.svg`;
+  
+  // Mostrar confirmación
+  if (confirm(`¿Exportar mapa 4x4 con TODOS los IDs de conos?\n\nArchivo: ${nombre}.svg\n\nEsto es útil para evaluación de alumnos.`)) {
+    a.click();
+  }
+  
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 100);
+}
+
 
 /* Inicializar: si hay valores en inputs, actualizar recorrido */
 if (document.querySelectorAll('#camposConos input').some(i => i.value)) {

@@ -166,14 +166,6 @@
           <option value="x">X</option>
         </select>
       </div>
-      <!-- Selector de forma de conos -->
-      <div style="margin-top: 8px;">
-        <label>Forma de los conos: </label>
-        <select id="formaConos" onchange="cambiarFormaConos()" style="width: 100%; padding: 6px; margin-top: 4px;">
-          <option value="circulo">Círculo</option>
-          <option value="x">X</option>
-        </select>
-      </div>
     </details>
 
     <h2 style="margin-top:12px; font-size:1.2rem">Exportar a SVG</h2>
@@ -181,6 +173,7 @@
       <button class="small" onclick="exportarSVG()">Exportar a SVG</button>
       <button class="small" onclick="exportarmediano()">SVG Mediano</button>
       <button class="small" onclick="exportarpeque()">SVG Pequeño</button>
+      <button class="small" onclick="exportarSVGConIDs3x3()">SVG con IDs</button>
     </div>
   </div>
 <!-- ******** FIN BLOQUE 1 ******** -->
@@ -1049,6 +1042,9 @@ function generarRecorridoAleatorio() {
 
 
 // ******** INICIO BLOQUE 6 ********
+// Tamaño del mapa 3x3 (en mm)
+const MAP_SIZE = 200;
+
 /* --- Exportar SVG - TAMAÑO FIJO 200mm --- */
 function exportarSVG(){
   const nombreInput = document.getElementById('nombre').value.trim();
@@ -1269,6 +1265,135 @@ function exportarpeque() {
     a.click();
 
     URL.revokeObjectURL(url);
+}
+
+/* --- Exportar SVG con TODOS los IDs de conos (3x3 para evaluación) --- */
+function exportarSVGConIDs3x3() {
+  const nombreInput = document.getElementById('nombre').value.trim();
+  const nombre = nombreInput ? nombreInput + "_todosIDs" : "recorrido3x3_todosIDs";
+  const original = document.getElementById('mapa');
+  const clone = original.cloneNode(true);
+  
+  // Eliminar elementos no exportables
+  clone.querySelectorAll('[data-noexport="true"]').forEach(n => n.remove());
+  
+  // Array para almacenar posiciones de textos y evitar solapamientos
+  const textosPosiciones = [];
+  
+  // Procesar TODOS los conos
+  clone.querySelectorAll('[id^="cono"]').forEach(cono => {
+    const id = cono.id.replace('cono', '');
+    
+    // Obtener posición del cono
+    let cx, cy;
+    
+    if (cono.tagName === 'circle') {
+      cx = parseFloat(cono.getAttribute('cx'));
+      cy = parseFloat(cono.getAttribute('cy'));
+      cono.setAttribute('stroke-width', GROSOR_BORDE_CONOS);
+    } else if (cono.tagName === 'path') {
+      // Para X, obtener posición desde data-* o calcular
+      if (cono.hasAttribute('data-cx') && cono.hasAttribute('data-cy')) {
+        cx = parseFloat(cono.getAttribute('data-cx'));
+        cy = parseFloat(cono.getAttribute('data-cy'));
+      } else {
+        const d = cono.getAttribute('d');
+        const puntos = d.split(' ');
+        const primerPunto = puntos[0].replace('M', '').split(',');
+        cx = parseFloat(primerPunto[0]) + 2.5;
+        cy = parseFloat(primerPunto[1]) + 2.5;
+      }
+      cono.setAttribute('stroke-width', '0.8');
+    }
+    
+    // Determinar mejor posición para el texto (evitar solapamientos)
+    const posicionesCandidatas = [
+      { dx: 0, dy: -10, anchor: 'middle', baseline: 'baseline' },   // Arriba
+      { dx: 12, dy: 0, anchor: 'start', baseline: 'middle' },       // Derecha
+      { dx: 0, dy: 12, anchor: 'middle', baseline: 'hanging' },     // Abajo
+      { dx: -12, dy: 0, anchor: 'end', baseline: 'middle' },        // Izquierda
+      { dx: 10, dy: -10, anchor: 'start', baseline: 'baseline' },   // Arriba-derecha
+      { dx: -10, dy: -10, anchor: 'end', baseline: 'baseline' },    // Arriba-izquierda
+      { dx: 10, dy: 10, anchor: 'start', baseline: 'hanging' },     // Abajo-derecha
+      { dx: -10, dy: 10, anchor: 'end', baseline: 'hanging' }       // Abajo-izquierda
+    ];
+    
+    // Encontrar posición que no solape
+    let posicionSeleccionada = null;
+    for (const pos of posicionesCandidatas) {
+      const textX = cx + pos.dx;
+      const textY = cy + pos.dy;
+      
+      // Verificar si esta posición solapa con otros textos
+      let solapa = false;
+      for (const tp of textosPosiciones) {
+        const distancia = Math.sqrt(Math.pow(textX - tp.x, 2) + Math.pow(textY - tp.y, 2));
+        if (distancia < 8) { // Radio mínimo de separación
+          solapa = true;
+          break;
+        }
+      }
+      
+      if (!solapa) {
+        posicionSeleccionada = { x: textX, y: textY, anchor: pos.anchor, baseline: pos.baseline };
+        textosPosiciones.push({ x: textX, y: textY });
+        break;
+      }
+    }
+    
+    // Si todas las posiciones solapan, usar la primera
+    if (!posicionSeleccionada) {
+      const pos = posicionesCandidatas[0];
+      posicionSeleccionada = { 
+        x: cx + pos.dx, 
+        y: cy + pos.dy, 
+        anchor: pos.anchor, 
+        baseline: pos.baseline 
+      };
+      textosPosiciones.push({ x: cx + pos.dx, y: cy + pos.dy });
+    }
+    
+    // Añadir texto con el ID del cono
+    const texto = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    texto.setAttribute('x', posicionSeleccionada.x);
+    texto.setAttribute('y', posicionSeleccionada.y);
+    texto.setAttribute('fill', '#000');
+    texto.setAttribute('font-size', '6');
+    texto.setAttribute('font-weight', 'bold');
+    texto.setAttribute('text-anchor', posicionSeleccionada.anchor);
+    texto.setAttribute('dominant-baseline', posicionSeleccionada.baseline);
+    texto.textContent = id;
+    
+    // Insertar después del cono
+    cono.parentNode.insertBefore(texto, cono.nextSibling);
+  });
+  
+  // Eliminar capas dinámicas (lineas, recorrido, numeros) para limpieza
+  const capasAEliminar = ['lineas', 'recorrido', 'numeros'];
+  capasAEliminar.forEach(id => {
+    const capa = clone.querySelector(`#${id}`);
+    if (capa) capa.remove();
+  });
+
+  clone.setAttribute('width', '200mm');
+  clone.setAttribute('height', '200mm');
+  clone.setAttribute('viewBox', '0 0 200 200');
+
+  const xml = new XMLSerializer().serializeToString(clone);
+  const blob = new Blob([xml], {type: 'image/svg+xml;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${nombre}.svg`;
+  
+  // Mostrar confirmación
+  if (confirm(`¿Exportar mapa 3x3 con TODOS los IDs de conos?\n\nArchivo: ${nombre}.svg\n\nEsto es útil para evaluación de alumnos.`)) {
+    a.click();
+  }
+  
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 100);
 }
 
 // Inicializar: si hay valores en inputs, actualizar recorrido

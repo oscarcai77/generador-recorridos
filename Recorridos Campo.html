@@ -131,7 +131,7 @@
 
     <div class="row" style="margin-top:8px; align-items:center;">
       <input id="toggleFondo" type="checkbox" disabled>
-      <label for="toggleFondo" style="margin:0">Mostrar fondo (Fondo_*.png/jpg/jpeg/gif/webp/svg/pdf)</label>
+      <label for="toggleFondo" style="margin:0">Mostrar fondo (Fondo_campo.png/jpg/jpeg/gif/webp/svg/pdf)</label>
     </div>
 
     <hr>
@@ -205,13 +205,34 @@
       <button class="small btn-edicion" onclick="toggleModoEdicion()" id="toggleEdicion">Activar modo edición</button>
     </div>
 
-    <!-- Botones para resetear conos -->
+    !-- Botones para resetear conos -->
     <div class="row" style="margin-top: 8px;">
       <button class="small" onclick="excluirTodosConos()">Excluir todos los conos</button>
       <button class="small" onclick="resetearConos()">Resetear conos</button>
     </div>
 
-    <div style="font-size: 1.2rem; color: #666; margin-top: 4px;">
+    <!-- Sistema de guardado de posiciones -->
+    <hr style="margin: 16px 0;">
+    <h2 style="margin: 0 0 8px 0; font-size:1.2rem; color: #3498db;">Posiciones Guardadas</h2>
+
+    <div style="margin-top: 8px;">
+      <input type="text" id="nombreConfiguracion" placeholder="Nombre para guardar" style="width: 100%; padding: 8px; margin-bottom: 8px;">
+    </div>
+
+    <div class="row">
+      <button class="small" onclick="guardarPosiciones()" style="background: #2ecc71;">Guardar posiciones</button>
+      <button class="small" onclick="cargarPosiciones()" style="background: #3498db;">Cargar posiciones</button>
+      <button class="small" onclick="eliminarConfiguracion()" style="background: #e74c3c;">Eliminar</button>
+    </div>
+
+    <div style="margin-top: 8px;">
+      <label>Configuraciones guardadas:</label>
+      <select id="selectorConfiguraciones" style="width: 100%; padding: 6px; margin-top: 4px;" onchange="seleccionarConfiguracion()">
+        <option value="">-- Seleccionar --</option>
+      </select>
+    </div>
+
+    <div style="font-size: 1.2rem; color: #666; margin-top: 8px;">
       En modo edición: Arrastra conos para moverlos. Los conos en zonas rojas no se exportan.
     </div>
   </div>
@@ -352,6 +373,9 @@ let modoEdicion = false;
 let conoArrastrando = null;
 let offsetX = 0;
 let offsetY = 0;
+
+// Sistema de configuraciones guardadas
+let configuracionesGuardadas = JSON.parse(localStorage.getItem('campoConfiguraciones')) || {};
 
 // Zonas de descarte
 const ZONAS_DESCARTE = [
@@ -1088,6 +1112,166 @@ function actualizarRecorrido(){
         gLineas.appendChild(lf);
     }
 }
+
+/* --- Sistema de guardado/carga de posiciones --- */
+
+function guardarPosiciones() {
+  if (!modoEdicion) {
+    alert('Activa el modo edición primero');
+    return;
+  }
+  
+  const nombre = document.getElementById('nombreConfiguracion').value.trim();
+  if (!nombre) {
+    alert('Ingresa un nombre para la configuración');
+    return;
+  }
+  
+  // Obtener todas las posiciones actuales
+  const posiciones = {};
+  document.querySelectorAll('#fixed-layer [id^="cono"]').forEach(cono => {
+    const id = cono.id.replace('cono', '');
+    
+    let cx, cy;
+    
+    if (cono.tagName === 'circle') {
+      cx = parseFloat(cono.getAttribute('cx'));
+      cy = parseFloat(cono.getAttribute('cy'));
+    } else if (cono.tagName === 'path') {
+      if (cono.hasAttribute('data-cx') && cono.hasAttribute('data-cy')) {
+        cx = parseFloat(cono.getAttribute('data-cx'));
+        cy = parseFloat(cono.getAttribute('data-cy'));
+      } else {
+        const d = cono.getAttribute('d');
+        const puntos = d.split(' ');
+        const primerPunto = puntos[0].replace('M', '').split(',');
+        cx = parseFloat(primerPunto[0]) + 2.5;
+        cy = parseFloat(primerPunto[1]) + 2.5;
+      }
+    }
+    
+    posiciones[id] = { cx: cx, cy: cy };
+  });
+  
+  // Guardar también la forma actual y otros datos
+  const configuracion = {
+    posiciones: posiciones,
+    forma: FORMA_CONOS,
+    fecha: new Date().toLocaleString(),
+    recorrido: campos.map(c => c.value).filter(v => v),
+    nombreRecorrido: document.getElementById('nombre').value
+  };
+  
+  configuracionesGuardadas[nombre] = configuracion;
+  localStorage.setItem('campoConfiguraciones', JSON.stringify(configuracionesGuardadas));
+  
+  // Actualizar selector
+  actualizarSelectorConfiguraciones();
+  alert(`Configuración "${nombre}" guardada correctamente`);
+}
+
+function cargarPosiciones() {
+  const selector = document.getElementById('selectorConfiguraciones');
+  const nombre = selector.value;
+  
+  if (!nombre || !configuracionesGuardadas[nombre]) {
+    alert('Selecciona una configuración válida');
+    return;
+  }
+  
+  const config = configuracionesGuardadas[nombre];
+  
+  // Activar modo edición si no está activo
+  if (!modoEdicion) {
+    toggleModoEdicion();
+  }
+  
+  // Restaurar forma si es diferente
+  if (config.forma && config.forma !== FORMA_CONOS) {
+    FORMA_CONOS = config.forma;
+    document.getElementById('formaConos').value = FORMA_CONOS;
+    actualizarFormaConos();
+  }
+  
+  // Aplicar posiciones
+  Object.keys(config.posiciones).forEach(id => {
+    const pos = config.posiciones[id];
+    const cono = document.getElementById('cono' + id);
+    
+    if (cono) {
+      if (cono.tagName === 'circle') {
+        cono.setAttribute('cx', pos.cx);
+        cono.setAttribute('cy', pos.cy);
+      } else if (cono.tagName === 'path') {
+        // Para X, actualizar atributos data-*
+        cono.setAttribute('data-cx', pos.cx);
+        cono.setAttribute('data-cy', pos.cy);
+        // Recrear la X en la nueva posición
+        const tamañoX = 2.5; // Tamaño fijo para X
+        cono.setAttribute('d', `M${pos.cx-tamañoX},${pos.cy-tamañoX} L${pos.cx+tamañoX},${pos.cy+tamañoX} M${pos.cx+tamañoX},${pos.cy-tamañoX} L${pos.cx-tamañoX},${pos.cy+tamañoX}`);
+      }
+      actualizarEstadoConoDescarte(cono);
+    }
+  });
+  
+  // Restaurar recorrido si existe
+  if (config.recorrido && config.recorrido.length > 0) {
+    campos.forEach((c, i) => {
+      c.value = config.recorrido[i] || '';
+    });
+  }
+  
+  // Restaurar nombre del recorrido
+  if (config.nombreRecorrido) {
+    document.getElementById('nombre').value = config.nombreRecorrido;
+  }
+  
+  // Actualizar recorrido
+  actualizarRecorrido();
+  
+  // Actualizar selector
+  actualizarSelectorConfiguraciones();
+  alert(`Configuración "${nombre}" cargada`);
+}
+
+function actualizarSelectorConfiguraciones() {
+  const selector = document.getElementById('selectorConfiguraciones');
+  selector.innerHTML = '<option value="">-- Seleccionar --</option>';
+  
+  Object.keys(configuracionesGuardadas).sort().forEach(nombre => {
+    const option = document.createElement('option');
+    option.value = nombre;
+    const fecha = configuracionesGuardadas[nombre].fecha || '';
+    option.textContent = `${nombre} ${fecha ? `(${fecha})` : ''}`;
+    selector.appendChild(option);
+  });
+}
+
+function seleccionarConfiguracion() {
+  const selector = document.getElementById('selectorConfiguraciones');
+  const nombre = selector.value;
+  
+  if (nombre && configuracionesGuardadas[nombre]) {
+    document.getElementById('nombreConfiguracion').value = nombre;
+  }
+}
+
+function eliminarConfiguracion() {
+  const nombre = document.getElementById('nombreConfiguracion').value.trim();
+  
+  if (!nombre || !configuracionesGuardadas[nombre]) {
+    alert('No hay configuración para eliminar');
+    return;
+  }
+  
+  if (confirm(`¿Eliminar permanentemente la configuración "${nombre}"?`)) {
+    delete configuracionesGuardadas[nombre];
+    localStorage.setItem('campoConfiguraciones', JSON.stringify(configuracionesGuardadas));
+    actualizarSelectorConfiguraciones();
+    document.getElementById('nombreConfiguracion').value = '';
+    alert(`Configuración "${nombre}" eliminada`);
+  }
+}
 // ******** FIN BLOQUE 4 ********
 
 
@@ -1397,22 +1581,47 @@ function exportarSVG(){
   URL.revokeObjectURL(url);
 }
 
-/* --- Exportar SVG con IDs de conos --- */
+/* --- Exportar SVG con TODOS los IDs de conos (para evaluación) --- */
 function exportarSVGConIDs() {
   const nombreInput = document.getElementById('nombre').value.trim();
-  const nombre = nombreInput ? nombreInput + "_conIDs" : "recorrido_conIDs";
+  const nombre = nombreInput ? nombreInput + "_todosIDs" : "recorrido_todosIDs";
   const original = document.getElementById('mapa');
   const clone = original.cloneNode(true);
-
+  
   // Eliminar elementos no exportables
   clone.querySelectorAll('[data-noexport="true"]').forEach(n => n.remove());
   clone.querySelectorAll('.zona-descarte').forEach(n => n.remove());
   
-  // Eliminar conos que estén en zona de descarte
-  clone.querySelectorAll('circle[id^="cono"]').forEach(cono => {
-    const cx = parseFloat(cono.getAttribute('cx'));
-    const cy = parseFloat(cono.getAttribute('cy'));
+  // Array para almacenar posiciones de textos y evitar solapamientos
+  const textosPosiciones = [];
+  
+  // Procesar TODOS los conos visibles (no en zonas de descarte)
+  clone.querySelectorAll('[id^="cono"]').forEach(cono => {
+    const id = cono.id.replace('cono', '');
     
+    // Obtener posición del cono
+    let cx, cy;
+    
+    if (cono.tagName === 'circle') {
+      cx = parseFloat(cono.getAttribute('cx'));
+      cy = parseFloat(cono.getAttribute('cy'));
+      cono.setAttribute('stroke-width', GROSOR_BORDE_CONOS);
+    } else if (cono.tagName === 'path') {
+      // Para X, obtener posición desde data-* o calcular
+      if (cono.hasAttribute('data-cx') && cono.hasAttribute('data-cy')) {
+        cx = parseFloat(cono.getAttribute('data-cx'));
+        cy = parseFloat(cono.getAttribute('data-cy'));
+      } else {
+        const d = cono.getAttribute('d');
+        const puntos = d.split(' ');
+        const primerPunto = puntos[0].replace('M', '').split(',');
+        cx = parseFloat(primerPunto[0]) + 2.5;
+        cy = parseFloat(primerPunto[1]) + 2.5;
+      }
+      cono.setAttribute('stroke-width', '0.8');
+    }
+    
+    // Verificar si está en zona de descarte
     const enZonaDescarte = ZONAS_DESCARTE.some(zona => 
       cx >= zona.x && cx <= zona.x + zona.width &&
       cy >= zona.y && cy <= zona.y + zona.height
@@ -1420,23 +1629,84 @@ function exportarSVGConIDs() {
     
     if (enZonaDescarte) {
       cono.remove();
-    } else {
-      cono.setAttribute('stroke-width', GROSOR_BORDE_CONOS);
-      
-      // Añadir texto con el ID del cono
-      const id = cono.id.replace('cono', '');
-      const texto = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      texto.setAttribute('x', parseFloat(cono.getAttribute('cx')));
-      texto.setAttribute('y', parseFloat(cono.getAttribute('cy')) - 8);
-      texto.setAttribute('fill', '#000');
-      texto.setAttribute('font-size', '6');
-      texto.setAttribute('font-weight', 'bold');
-      texto.setAttribute('text-anchor', 'middle');
-      texto.setAttribute('dominant-baseline', 'middle');
-      texto.textContent = id;
-      
-      cono.parentNode.insertBefore(texto, cono.nextSibling);
+      return;
     }
+    
+    // Determinar mejor posición para el texto (evitar solapamientos)
+    const posicionesCandidatas = [
+      { dx: 0, dy: -10, anchor: 'middle', baseline: 'baseline' },   // Arriba
+      { dx: 12, dy: 0, anchor: 'start', baseline: 'middle' },       // Derecha
+      { dx: 0, dy: 12, anchor: 'middle', baseline: 'hanging' },     // Abajo
+      { dx: -12, dy: 0, anchor: 'end', baseline: 'middle' },        // Izquierda
+      { dx: 10, dy: -10, anchor: 'start', baseline: 'baseline' },   // Arriba-derecha
+      { dx: -10, dy: -10, anchor: 'end', baseline: 'baseline' },    // Arriba-izquierda
+      { dx: 10, dy: 10, anchor: 'start', baseline: 'hanging' },     // Abajo-derecha
+      { dx: -10, dy: 10, anchor: 'end', baseline: 'hanging' }       // Abajo-izquierda
+    ];
+    
+    // Encontrar posición que no solape
+    let posicionSeleccionada = null;
+    for (const pos of posicionesCandidatas) {
+      const textX = cx + pos.dx;
+      const textY = cy + pos.dy;
+      
+      // Verificar si esta posición solapa con otros textos
+      let solapa = false;
+      for (const tp of textosPosiciones) {
+        const distancia = Math.sqrt(Math.pow(textX - tp.x, 2) + Math.pow(textY - tp.y, 2));
+        if (distancia < 8) { // Radio mínimo de separación
+          solapa = true;
+          break;
+        }
+      }
+      
+      if (!solapa) {
+        posicionSeleccionada = { x: textX, y: textY, anchor: pos.anchor, baseline: pos.baseline };
+        textosPosiciones.push({ x: textX, y: textY });
+        break;
+      }
+    }
+    
+    // Si todas las posiciones solapan, usar la primera
+    if (!posicionSeleccionada) {
+      const pos = posicionesCandidatas[0];
+      posicionSeleccionada = { 
+        x: cx + pos.dx, 
+        y: cy + pos.dy, 
+        anchor: pos.anchor, 
+        baseline: pos.baseline 
+      };
+      textosPosiciones.push({ x: cx + pos.dx, y: cy + pos.dy });
+    }
+    
+    // Añadir texto con el ID del cono
+    const texto = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    texto.setAttribute('x', posicionSeleccionada.x);
+    texto.setAttribute('y', posicionSeleccionada.y);
+    texto.setAttribute('fill', '#000');
+    texto.setAttribute('font-size', '6');
+    texto.setAttribute('font-weight', 'bold');
+    texto.setAttribute('text-anchor', posicionSeleccionada.anchor);
+    texto.setAttribute('dominant-baseline', posicionSeleccionada.baseline);
+    texto.textContent = id;
+    
+    // Insertar después del cono
+    cono.parentNode.insertBefore(texto, cono.nextSibling);
+  });
+  
+  // También eliminar elementos que no son conos identificables
+  clone.querySelectorAll('circle:not([id]), path:not([id])').forEach(el => {
+    if (el.getAttribute('fill') === 'deepskyblue' || 
+        (el.tagName === 'path' && el.getAttribute('stroke') === 'black')) {
+      el.remove();
+    }
+  });
+
+  // Eliminar capas dinámicas (lineas, recorrido, numeros) para limpieza
+  const capasAEliminar = ['lineas', 'recorrido', 'numeros'];
+  capasAEliminar.forEach(id => {
+    const capa = clone.querySelector(`#${id}`);
+    if (capa) capa.remove();
   });
 
   clone.setAttribute('width', '200mm');
@@ -1449,8 +1719,15 @@ function exportarSVGConIDs() {
   const a = document.createElement('a');
   a.href = url;
   a.download = `${nombre}.svg`;
-  a.click();
-  URL.revokeObjectURL(url);
+  
+  // Mostrar confirmación
+  if (confirm(`¿Exportar mapa con TODOS los IDs de conos?\n\nArchivo: ${nombre}.svg\n\nEsto es útil para evaluación de alumnos.`)) {
+    a.click();
+  }
+  
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 100);
 }
 
 // Inicializar
@@ -1461,6 +1738,10 @@ actualizarCuadricula();
 if (document.querySelectorAll('#camposConos input').some(i => i.value)) {
     actualizarRecorrido();
 }
+
+// Inicializar sistema de configuraciones guardadas
+actualizarSelectorConfiguraciones();
+
 </script>
 </body>
 </html>
