@@ -1,4 +1,5 @@
 # Generador de Recorridos de Orientación
+Última modificación 09-12-2025
 
 Sistema web para crear y exportar recorridos de orientación en formato SVG.
 
