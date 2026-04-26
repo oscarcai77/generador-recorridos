@@ -22,15 +22,15 @@ SOFTWARE.
 
 ## Desarrollo
 
-Este proyecto fue desarrollado con asistencia de DeepSeek AI.
+Este proyecto fue desarrollado con asistencia de Claude (Anthropic).
 
 **Herramientas utilizadas:**
-- DeepSeek para asistencia en desarrollo
+- Claude (Anthropic) para asistencia en desarrollo
 - HTML5, CSS3, JavaScript
 - SVG para gráficos vectoriales
 
 
 ## Agradecimientos
 
-- DeepSeek AI por la asistencia en desarrollo
+- Claude (Anthropic) por la asistencia en desarrollo
 - La comunidad open source por las inspiraciones
