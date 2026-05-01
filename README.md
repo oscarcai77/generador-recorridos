@@ -1,7 +1,7 @@
 # Generador de Recorridos de Orientación
-Última modificación 26-04-2026
+Última modificación 28-04-2026
 
-Sistema web para crear y exportar recorridos de orientación en formato SVG. Todo en un único archivo HTML autocontenido, sin dependencias externas.
+Sistema web para crear y exportar recorridos de orientación en formato SVG. Todo en un único archivo HTML autocontenido, los fondos son archivos independientes.
 
 ## Características
 
@@ -22,7 +22,7 @@ Sistema web para crear y exportar recorridos de orientación en formato SVG. Tod
   - *Sencillo*: el recorrido siempre avanza hacia el doble círculo (meta), con posibilidad de pasos laterales al mismo nivel (probabilidad fija del 20%, máximo 2 consecutivos)
   - *Avanzado*: sin restricciones de dirección, completamente aleatorio
 - **Distribución por filas**: el algoritmo agrupa los conos en filas por proximidad real y distribuye los puntos del recorrido de forma uniforme entre ellas, evitando que se acumulen en una sola fila
-- **Detección de anomalías**: aviso antes de generar si la distribución de conos es irregular tras moverlos manualmente
+- **Detección de anomalías**: aviso antes de generar si la distribución de conos es irregular tras moverlos manualmente.
 - **Modo edición**: arrastrar conos, excluirlos a zona de descarte, resetear posiciones
 
 ### Múltiples recorridos
@@ -62,7 +62,7 @@ generador-recorridos/
 
 ## Uso
 
-1. Abre `Generador_v_B_ultimo.html` en tu navegador (no requiere servidor)
+1. Abre `Generador_recorridos.html` en tu navegador (no requiere servidor)
 2. Selecciona el módulo: 3×3, 4×4 o Campo
 3. Crea tu recorrido:
    - Haz clic en los conos para añadirlos al recorrido
