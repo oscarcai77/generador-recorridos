@@ -380,6 +380,7 @@
       <p style="margin:8px 0 6px 0;font-size:0.85rem;font-weight:600;color:#555;">PDF</p>
       <div class="row">
         <button class="small" onclick="exportarPDF_3x3()" style="background:#c0392b;">📄 Exportar PDF</button>
+        <button class="small" onclick="exportarPDFconIDs_3x3()" style="background:#922b21;">📄 PDF con IDs</button>
       </div>
     </div>
 
@@ -618,6 +619,7 @@
       <p style="margin:8px 0 6px 0;font-size:0.85rem;font-weight:600;color:#555;">PDF</p>
       <div class="row">
         <button class="small" onclick="exportarPDF_4x4()" style="background:#c0392b;">📄 Exportar PDF</button>
+        <button class="small" onclick="exportarPDFconIDs_4x4()" style="background:#922b21;">📄 PDF con IDs</button>
       </div>
     </div>
 
@@ -916,6 +918,7 @@
       <p style="margin:8px 0 6px 0;font-size:0.85rem;font-weight:600;color:#555;">PDF</p>
       <div class="row">
         <button class="small" onclick="exportarPDF_campo()" style="background:#c0392b;">📄 Exportar PDF</button>
+        <button class="small" onclick="exportarPDFconIDs_campo()" style="background:#922b21;">📄 PDF con IDs</button>
       </div>
     </div>
 
@@ -2628,6 +2631,104 @@ function generarPDF(mapaId, nombreId, w, h){
 window.exportarPDF_3x3=function(){ generarPDF('mapa_3x3','nombre_3x3',200,200); };
 window.exportarPDF_4x4=function(){ generarPDF('mapa_4x4','nombre_4x4',220,220); };
 window.exportarPDF_campo=function(){ generarPDF('mapa_campo','nombre_campo',200,400); };
+
+// =====================================================
+// EXPORTAR PDF CON IDs
+// =====================================================
+function generarPDFconIDs(mapaId, nombreId, w, h, prefix, zonas){
+  const nombre=document.getElementById(nombreId).value.trim()||'recorrido';
+  const mod=mapaId.replace('mapa_','');
+  const orig=document.getElementById(mapaId);
+  const clone=orig.cloneNode(true);
+
+  aplicarFondoAlClon(clone, mod);
+  clone.querySelectorAll('[data-noexport="true"]').forEach(n=>n.remove());
+  clone.querySelectorAll('.zona-descarte-campo').forEach(n=>n.remove());
+
+  // Add ID labels next to each cone, skip discarded ones
+  const texPos=[];
+  clone.querySelectorAll('[id^="'+prefix+'"]').forEach(cono=>{
+    const id=cono.id.replace(prefix,'');
+    let cx,cy;
+    if(cono.tagName==='circle'){
+      cx=parseFloat(cono.getAttribute('cx'));
+      cy=parseFloat(cono.getAttribute('cy'));
+    } else if(cono.hasAttribute('data-cx')){
+      cx=parseFloat(cono.getAttribute('data-cx'));
+      cy=parseFloat(cono.getAttribute('data-cy'));
+    }
+    if(cx===undefined||cy===undefined) return;
+    // Remove cones in discard zones
+    if(zonas && zonas.some(z=>cx>=z.x&&cx<=z.x+z.w&&cy>=z.y&&cy<=z.y+z.h)){
+      cono.remove(); return;
+    }
+    // Find best label position avoiding overlap
+    const cands=[
+      {dx:0,dy:-10,anc:'middle',bl:'baseline'},
+      {dx:12,dy:0,anc:'start',bl:'middle'},
+      {dx:0,dy:12,anc:'middle',bl:'hanging'},
+      {dx:-12,dy:0,anc:'end',bl:'middle'}
+    ];
+    let pos=null;
+    for(const c of cands){
+      const tx=cx+c.dx, ty=cy+c.dy;
+      if(!texPos.some(p=>Math.hypot(tx-p.x,ty-p.y)<8)){
+        pos={x:tx,y:ty,anc:c.anc,bl:c.bl};
+        texPos.push({x:tx,y:ty});
+        break;
+      }
+    }
+    if(!pos){ pos={x:cx+cands[0].dx,y:cy+cands[0].dy,anc:cands[0].anc,bl:cands[0].bl}; texPos.push({x:pos.x,y:pos.y}); }
+    const t=document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x',pos.x); t.setAttribute('y',pos.y);
+    t.setAttribute('fill','#000'); t.setAttribute('font-size','6');
+    t.setAttribute('font-weight','bold'); t.setAttribute('text-anchor',pos.anc);
+    t.setAttribute('dominant-baseline',pos.bl);
+    t.textContent=id;
+    cono.parentNode.insertBefore(t,cono.nextSibling);
+  });
+
+  // Remove route layers
+  ['lineas_','recorrido_','numeros_'].forEach(pfx=>{
+    const n=clone.querySelector('#'+pfx+mod); if(n) n.remove();
+  });
+
+  clone.setAttribute('viewBox',`0 0 ${w} ${h}`);
+  clone.setAttribute('xmlns:xlink','http://www.w3.org/1999/xlink');
+  clone.removeAttribute('width'); clone.removeAttribute('height'); clone.removeAttribute('style');
+
+  const svgStr=new XMLSerializer().serializeToString(clone);
+  const isPortrait=h>=w;
+  const areaW=isPortrait?190:277;
+  const areaH=isPortrait?277:190;
+  const ratio=Math.min(areaW/w, areaH/h);
+  const svgW=Math.round(w*ratio);
+  const svgH=Math.round(h*ratio);
+
+  const pdfHtml=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${nombre}_conIDs</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    @page{size:${isPortrait?'A4 portrait':'A4 landscape'};margin:10mm;}
+    html,body{width:100%;height:100%;}
+    body{display:flex;align-items:center;justify-content:center;}
+    svg{display:block;width:${svgW}mm;height:${svgH}mm;}
+  </style></head><body>${svgStr}</body></html>`;
+
+  const blob=new Blob([pdfHtml],{type:'text/html;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const win=window.open(url,'_blank');
+  if(win){
+    win.onload=()=>{ setTimeout(()=>{ win.print(); setTimeout(()=>{ win.close(); URL.revokeObjectURL(url); },1500); },400); };
+  } else {
+    const a=document.createElement('a'); a.href=url; a.target='_blank'; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),3000);
+    alert('Si el PDF no se abrió automáticamente, permite las ventanas emergentes en tu navegador.');
+  }
+}
+
+window.exportarPDFconIDs_3x3=function(){ generarPDFconIDs('mapa_3x3','nombre_3x3',200,200,'cono3x3_',null); };
+window.exportarPDFconIDs_4x4=function(){ generarPDFconIDs('mapa_4x4','nombre_4x4',220,220,'cono4x4_',null); };
+window.exportarPDFconIDs_campo=function(){ generarPDFconIDs('mapa_campo','nombre_campo',200,400,'conoC_',[{x:0,y:0,w:200,h:50},{x:0,y:350,w:200,h:50}]); };
 
 // =====================================================
 // ZOOM + PAN EN EL ÁREA DEL MAPA
