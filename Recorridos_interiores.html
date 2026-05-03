@@ -246,6 +246,12 @@
       <button class="small" onclick="generarAleatorio_3x3()" id="btnAleatorio_3x3">Aleatorio (7)</button>
       <button class="small" onclick="copiarNumeros_3x3()">Copiar números</button>
     </div>
+    <label style="margin-top:8px;">Nivel de dificultad (aleatorio)</label>
+    <div class="dif-selector" id="nivelSelector_3x3">
+      <button class="dif-btn activo-dif" data-nivel="1" onclick="setNivel_3x3(1)" style="background:#27ae60;color:#fff;">Nivel 1</button>
+      <button class="dif-btn" data-nivel="2" onclick="setNivel_3x3(2)">Nivel 2</button>
+      <button class="dif-btn" data-nivel="3" onclick="setNivel_3x3(3)">Nivel 3</button>
+    </div>
 
     <label>Conos seleccionados (máx. 12) — editable</label>
     <div class="campos-conos-grid" id="camposConos_3x3">
@@ -484,6 +490,12 @@
       <button class="small" onclick="borrarRecorrido_4x4()">Borrar</button>
       <button class="small" onclick="generarAleatorio_4x4()" id="btnAleatorio_4x4">Aleatorio (7)</button>
       <button class="small" onclick="copiarNumeros_4x4()">Copiar números</button>
+    </div>
+    <label style="margin-top:8px;">Nivel de dificultad (aleatorio)</label>
+    <div class="dif-selector" id="nivelSelector_4x4">
+      <button class="dif-btn activo-dif" data-nivel="1" onclick="setNivel_4x4(1)" style="background:#27ae60;color:#fff;">Nivel 1</button>
+      <button class="dif-btn" data-nivel="2" onclick="setNivel_4x4(2)">Nivel 2</button>
+      <button class="dif-btn" data-nivel="3" onclick="setNivel_4x4(3)">Nivel 3</button>
     </div>
 
     <label>Conos seleccionados (máx. 12) — editable</label>
@@ -1440,35 +1452,117 @@ function dibujarRecorrido(ids, campos, gL, gR, gN, mapaId, getCx, getCy, triangu
   });
   updateFondoTransform_3x3();
 
-  // Aleatorio 3x3
+  // ===== NIVELES 3x3 =====
+  // Cuadrantes: si=superior-izq(1), sd=superior-der(2), ii=inferior-izq(3), id=inferior-der(4)
+  // Layout:  1(si) | 2(sd)
+  //          3(ii) | 4(id)
+  // Adyacentes: 1↔2 (mismo nivel, lado), 1↔3 (mismo lado, arriba/abajo), 2↔4, 3↔4
+  // Nivel 1: recorrido circular por cuadrantes adyacentes → 1→2→4→3 o 1→3→4→2 (y rotaciones)
+  // Nivel 2: recorrido con un cruce diagonal → ej 1→2→4→3 con paso 2→4 en diagonal
+  // Nivel 3: al menos 1 punto por cuadrante, orden libre
+
+  let _nivel3x3=1;
+  window.setNivel_3x3=function(n){
+    _nivel3x3=n;
+    document.querySelectorAll('#nivelSelector_3x3 .dif-btn').forEach(b=>{
+      const active=parseInt(b.dataset.nivel)===n;
+      b.classList.toggle('activo-dif',active);
+      b.style.background=active?(n===1?'#27ae60':n===2?'#e67e22':'#e74c3c'):'';
+      b.style.color=active?'#fff':'';
+    });
+  };
+
   window.generarAleatorio_3x3=function(){
     const cuad={
-      si:[24,51,91,30,70,40,55,15,96], sd:[29,79,62,45,18,85,68,39,33],
-      ii:[27,82,59,48,13,89,71,37,22], id:[31,76,64,52,11,94,73,43,87]
+      si:[24,51,91,30,70,40,55,15,96], // cuadrante 1: superior izquierdo
+      sd:[29,79,62,45,18,85,68,39,33], // cuadrante 2: superior derecho
+      ii:[27,82,59,48,13,89,71,37,22], // cuadrante 3: inferior izquierdo
+      id:[31,76,64,52,11,94,73,43,87]  // cuadrante 4: inferior derecho
     };
+    // Pares de cuadrantes adyacentes (circulares): 1-2 (arriba), 2-4 (derecha), 4-3 (abajo), 3-1 (izquierda)
+    // Los dos recorridos circulares posibles: [si,sd,id,ii] o [si,ii,id,sd]
     const posMap={0:[0,0],1:[1,0],2:[2,0],3:[0,1],4:[1,1],5:[2,1],6:[0,2],7:[1,2],8:[2,2]};
     function adj(p1,p2){const[x1,y1]=posMap[p1],[x2,y2]=posMap[p2];return Math.abs(x1-x2)<=1&&Math.abs(y1-y2)<=1;}
     function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a;}
-    let sel=[]; const usados={si:new Set(),sd:new Set(),ii:new Set(),id:new Set()};
-    Object.keys(cuad).forEach(q=>{
-      const arr=shuffle([...cuad[q]]);
-      const c=arr[0]; sel.push(c); usados[q].add(cuad[q].indexOf(c));
-    });
-    while(sel.length<NPTS){
-      const qs=Object.keys(cuad);
-      const q=qs[Math.floor(Math.random()*qs.length)];
-      const disp=shuffle(cuad[q].filter(c=>!sel.includes(c)));
-      let ok=false;
-      for(const c of disp){
-        const pi=cuad[q].indexOf(c);
-        if(![...usados[q]].some(p=>adj(p,pi))){
-          sel.push(c); usados[q].add(pi); ok=true; break;
+
+    // Distribuir N puntos en 4 cuadrantes lo más uniformemente posible
+    function distribuirPuntos(n){
+      const base=Math.floor(n/4);
+      const extra=n%4;
+      const dist={si:base,sd:base,ii:base,id:base};
+      // Dar el extra a cuadrantes aleatorios
+      const qs=shuffle(['si','sd','ii','id']);
+      for(let i=0;i<extra;i++) dist[qs[i]]++;
+      return dist;
+    }
+
+    // Seleccionar 'k' conos aleatorios sin adyacencia en un cuadrante
+    function selCuad(qname,k){
+      const pool=shuffle([...cuad[qname]]);
+      const sel=[]; const usados=new Set();
+      for(const c of pool){
+        if(sel.length>=k) break;
+        const pi=cuad[qname].indexOf(c);
+        if(![...usados].some(p=>adj(p,pi))){sel.push(c);usados.add(pi);}
+      }
+      // Si no hay suficientes con restricción, completar sin ella
+      if(sel.length<k){
+        for(const c of pool){
+          if(sel.length>=k) break;
+          if(!sel.includes(c)) sel.push(c);
         }
       }
-      if(!ok) break;
+      return sel;
     }
-    shuffle(sel); sel=sel.slice(0,NPTS);
-    campos.forEach((c,i)=>c.value=sel[i]||'');
+
+    const dist=distribuirPuntos(NPTS);
+    const selPorCuad={};
+    ['si','sd','ii','id'].forEach(q=>{ selPorCuad[q]=selCuad(q,dist[q]); });
+
+    let recorrido=[];
+
+    if(_nivel3x3===1){
+      // Recorrido circular por cuadrantes adyacentes
+      // Cuadrante de inicio aleatorio, dirección aleatoria
+      const circulosCW=['si','sd','id','ii']; // sentido horario: 1→2→4→3
+      const startIdx=Math.floor(Math.random()*4);
+      const sentido=Math.random()<0.5?1:-1;
+      const orden=[];
+      for(let i=0;i<4;i++){
+        const idx=((startIdx+i*sentido)%4+4)%4;
+        orden.push(circulosCW[idx]);
+      }
+      orden.forEach(q=>recorrido.push(...shuffle(selPorCuad[q])));
+
+    } else if(_nivel3x3===2){
+      // Recorrido con exactamente un salto diagonal entre cuadrantes.
+      // Cuadrantes: si=1(sup-izq), sd=2(sup-der), ii=3(inf-izq), id=4(inf-der)
+      // Adyacentes: 1↔2, 1↔3, 2↔4, 3↔4  |  Diagonales: 1↔4, 2↔3
+      // Órdenes válidos (exactamente 1 salto diagonal) por cuadrante de inicio:
+      // Inicio 1: 1→2→3→4 o 1→3→2→4
+      // Inicio 2: 2→1→4→3 o 2→4→1→3 (con salto diagonal en negrita: 2→4→1 tiene 4→1 diagonal)
+      // Inicio 3: 3→1→4→2 o 3→4→1→2
+      // Inicio 4: 4→2→3→1 o 4→3→2→1
+      const ordenesNivel2={
+        si:[ ['si','sd','ii','id'], ['si','ii','sd','id'] ],
+        sd:[ ['sd','si','id','ii'], ['sd','id','si','ii'] ],
+        ii:[ ['ii','si','id','sd'], ['ii','id','si','sd'] ],
+        id:[ ['id','sd','ii','si'], ['id','ii','sd','si'] ]
+      };
+      const starts=['si','sd','ii','id'];
+      const startQ=starts[Math.floor(Math.random()*4)];
+      const opcs=ordenesNivel2[startQ];
+      const orden=opcs[Math.floor(Math.random()*opcs.length)];
+      orden.forEach(q=>recorrido.push(...shuffle(selPorCuad[q])));
+
+    } else {
+      // Nivel 3: orden libre, al menos 1 por cuadrante garantizado
+      ['si','sd','ii','id'].forEach(q=>recorrido.push(...selPorCuad[q]));
+      shuffle(recorrido);
+    }
+
+    recorrido=recorrido.slice(0,NPTS);
+    campos.forEach((c,i)=>c.value=recorrido[i]||'');
     document.getElementById('triangulo_3x3').value=['A','B','C','D'][Math.floor(Math.random()*4)];
     actualizar();
   };
@@ -1714,35 +1808,90 @@ function dibujarRecorrido(ids, campos, gL, gR, gN, mapaId, getCx, getCy, triangu
   });
   updateFondoTransform_4x4();
 
+  // ===== NIVELES 4x4 =====
+  let _nivel4x4=1;
+  window.setNivel_4x4=function(n){
+    _nivel4x4=n;
+    document.querySelectorAll('#nivelSelector_4x4 .dif-btn').forEach(b=>{
+      const active=parseInt(b.dataset.nivel)===n;
+      b.classList.toggle('activo-dif',active);
+      b.style.background=active?(n===1?'#27ae60':n===2?'#e67e22':'#e74c3c'):'';
+      b.style.color=active?'#fff':'';
+    });
+  };
+
   window.generarAleatorio_4x4=function(){
     const cuad={
-      si:[32,10,76,56,14,78,36,58,80,34,12,60,17,54,38,82],
-      sd:[64,19,42,86,23,88,62,44,90,25,66,46,21,68,40,84],
-      ii:[48,26,91,72,28,93,50,74,95,30,52,75,31,70,53,97],
-      id:[55,11,33,77,13,79,35,57,81,15,37,59,18,61,39,83]
+      si:[32,10,76,56,14,78,36,58,80,34,12,60,17,54,38,82], // cuadrante 1: superior izquierdo
+      sd:[64,19,42,86,23,88,62,44,90,25,66,46,21,68,40,84], // cuadrante 2: superior derecho
+      ii:[48,26,91,72,28,93,50,74,95,30,52,75,31,70,53,97], // cuadrante 3: inferior izquierdo
+      id:[55,11,33,77,13,79,35,57,81,15,37,59,18,61,39,83]  // cuadrante 4: inferior derecho
     };
     const posM={0:[0,0],1:[1,0],2:[2,0],3:[3,0],4:[0,1],5:[1,1],6:[2,1],7:[3,1],
       8:[0,2],9:[1,2],10:[2,2],11:[3,2],12:[0,3],13:[1,3],14:[2,3],15:[3,3]};
     function adj(p1,p2){const[x1,y1]=posM[p1],[x2,y2]=posM[p2];return Math.abs(x1-x2)<=1&&Math.abs(y1-y2)<=1;}
     function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-    let sel=[]; const usados={si:new Set(),sd:new Set(),ii:new Set(),id:new Set()};
-    Object.keys(cuad).forEach(q=>{
-      const arr=shuffle([...cuad[q]]); const c=arr[0];
-      sel.push(c); usados[q].add(cuad[q].indexOf(c));
-    });
-    while(sel.length<NPTS){
-      const qs=Object.keys(cuad);
-      const q=qs[Math.floor(Math.random()*qs.length)];
-      const disp=shuffle(cuad[q].filter(c=>!sel.includes(c)));
-      let ok=false;
-      for(const c of disp){
-        const pi=cuad[q].indexOf(c);
-        if(![...usados[q]].some(p=>adj(p,pi))){sel.push(c);usados[q].add(pi);ok=true;break;}
-      }
-      if(!ok) break;
+
+    function distribuirPuntos(n){
+      const base=Math.floor(n/4);
+      const extra=n%4;
+      const dist={si:base,sd:base,ii:base,id:base};
+      const qs=shuffle(['si','sd','ii','id']);
+      for(let i=0;i<extra;i++) dist[qs[i]]++;
+      return dist;
     }
-    shuffle(sel); sel=sel.slice(0,NPTS);
-    campos.forEach((c,i)=>c.value=sel[i]||'');
+
+    function selCuad(qname,k){
+      const pool=shuffle([...cuad[qname]]);
+      const sel=[]; const usados=new Set();
+      for(const c of pool){
+        if(sel.length>=k) break;
+        const pi=cuad[qname].indexOf(c);
+        if(![...usados].some(p=>adj(p,pi))){sel.push(c);usados.add(pi);}
+      }
+      if(sel.length<k){
+        for(const c of pool){ if(sel.length>=k) break; if(!sel.includes(c)) sel.push(c); }
+      }
+      return sel;
+    }
+
+    const dist=distribuirPuntos(NPTS);
+    const selPorCuad={};
+    ['si','sd','ii','id'].forEach(q=>{ selPorCuad[q]=selCuad(q,dist[q]); });
+
+    let recorrido=[];
+
+    if(_nivel4x4===1){
+      const circulosCW=['si','sd','id','ii'];
+      const startIdx=Math.floor(Math.random()*4);
+      const sentido=Math.random()<0.5?1:-1;
+      const orden=[];
+      for(let i=0;i<4;i++){
+        const idx=((startIdx+i*sentido)%4+4)%4;
+        orden.push(circulosCW[idx]);
+      }
+      orden.forEach(q=>recorrido.push(...shuffle(selPorCuad[q])));
+
+    } else if(_nivel4x4===2){
+      const ordenesNivel2={
+        si:[ ['si','sd','ii','id'], ['si','ii','sd','id'] ],
+        sd:[ ['sd','si','id','ii'], ['sd','id','si','ii'] ],
+        ii:[ ['ii','si','id','sd'], ['ii','id','si','sd'] ],
+        id:[ ['id','sd','ii','si'], ['id','ii','sd','si'] ]
+      };
+      const starts=['si','sd','ii','id'];
+      const startQ=starts[Math.floor(Math.random()*4)];
+      const opcs=ordenesNivel2[startQ];
+      const orden=opcs[Math.floor(Math.random()*opcs.length)];
+      orden.forEach(q=>recorrido.push(...shuffle(selPorCuad[q])));
+
+    } else {
+      ['si','sd','ii','id'].forEach(q=>recorrido.push(...selPorCuad[q]));
+      shuffle(recorrido);
+    }
+
+    recorrido=recorrido.slice(0,NPTS);
+    campos.forEach((c,i)=>c.value=recorrido[i]||'');
     document.getElementById('triangulo_4x4').value=['A','B','C','D'][Math.floor(Math.random()*4)];
     actualizar();
   };
@@ -2646,7 +2795,10 @@ function generarPDFconIDs(mapaId, nombreId, w, h, prefix, zonas){
   clone.querySelectorAll('.zona-descarte-campo').forEach(n=>n.remove());
 
   // Add ID labels next to each cone, skip discarded ones
-  const texPos=[];
+  // Agrandar conos solo para esta presentación
+  clone.querySelectorAll('[id^="'+prefix+'"]').forEach(c=>{
+    if(c.tagName==='circle') c.setAttribute('r','7');
+  });
   clone.querySelectorAll('[id^="'+prefix+'"]').forEach(cono=>{
     const id=cono.id.replace(prefix,'');
     let cx,cy;
@@ -2662,30 +2814,23 @@ function generarPDFconIDs(mapaId, nombreId, w, h, prefix, zonas){
     if(zonas && zonas.some(z=>cx>=z.x&&cx<=z.x+z.w&&cy>=z.y&&cy<=z.y+z.h)){
       cono.remove(); return;
     }
-    // Find best label position avoiding overlap
-    const cands=[
-      {dx:0,dy:-10,anc:'middle',bl:'baseline'},
-      {dx:12,dy:0,anc:'start',bl:'middle'},
-      {dx:0,dy:12,anc:'middle',bl:'hanging'},
-      {dx:-12,dy:0,anc:'end',bl:'middle'}
-    ];
-    let pos=null;
-    for(const c of cands){
-      const tx=cx+c.dx, ty=cy+c.dy;
-      if(!texPos.some(p=>Math.hypot(tx-p.x,ty-p.y)<8)){
-        pos={x:tx,y:ty,anc:c.anc,bl:c.bl};
-        texPos.push({x:tx,y:ty});
-        break;
-      }
-    }
-    if(!pos){ pos={x:cx+cands[0].dx,y:cy+cands[0].dy,anc:cands[0].anc,bl:cands[0].bl}; texPos.push({x:pos.x,y:pos.y}); }
+    // Label centered on cone - larger with white halo for readability
+    const halo=document.createElementNS('http://www.w3.org/2000/svg','text');
+    halo.setAttribute('x',cx); halo.setAttribute('y',cy+3);
+    halo.setAttribute('text-anchor','middle');
+    halo.setAttribute('font-size','9'); halo.setAttribute('font-weight','700');
+    halo.setAttribute('fill','white'); halo.setAttribute('stroke','white');
+    halo.setAttribute('stroke-width','1.5'); halo.setAttribute('stroke-linejoin','round');
+    halo.setAttribute('font-family','Segoe UI,sans-serif');
+    halo.textContent=id;
     const t=document.createElementNS('http://www.w3.org/2000/svg','text');
-    t.setAttribute('x',pos.x); t.setAttribute('y',pos.y);
-    t.setAttribute('fill','#000'); t.setAttribute('font-size','6');
-    t.setAttribute('font-weight','bold'); t.setAttribute('text-anchor',pos.anc);
-    t.setAttribute('dominant-baseline',pos.bl);
+    t.setAttribute('x',cx); t.setAttribute('y',cy+3);
+    t.setAttribute('text-anchor','middle');
+    t.setAttribute('font-size','9'); t.setAttribute('font-weight','700');
+    t.setAttribute('fill','#1a1a1a'); t.setAttribute('font-family','Segoe UI,sans-serif');
     t.textContent=id;
-    cono.parentNode.insertBefore(t,cono.nextSibling);
+    cono.parentNode.insertBefore(halo,cono.nextSibling);
+    cono.parentNode.insertBefore(t,halo.nextSibling);
   });
 
   // Remove route layers
@@ -3892,18 +4037,12 @@ function imprimirMapaIDs(){
       cy=parseFloat(cono.getAttribute('data-cy'));
     }
     const r=cono.tagName==='circle'?(parseFloat(cono.getAttribute('r'))||3.5):3.5;
-    const textWidth=conoId.length*3.8+2;
-    const bg=document.createElementNS(ns,'rect');
-    bg.setAttribute('x',cx-textWidth/2); bg.setAttribute('y',cy+r+0.5);
-    bg.setAttribute('width',textWidth); bg.setAttribute('height',4.5);
-    bg.setAttribute('rx','1.5'); bg.setAttribute('fill','white'); bg.setAttribute('fill-opacity','0.9');
     const txt=document.createElementNS(ns,'text');
-    txt.setAttribute('x',cx); txt.setAttribute('y',cy+r+4);
+    txt.setAttribute('x',cx); txt.setAttribute('y',cy+1.2);
     txt.setAttribute('text-anchor','middle');
-    txt.setAttribute('font-size','3.8'); txt.setAttribute('font-weight','700');
-    txt.setAttribute('fill','#2c3e50'); txt.setAttribute('font-family','Segoe UI,sans-serif');
+    txt.setAttribute('font-size','3.5'); txt.setAttribute('font-weight','700');
+    txt.setAttribute('fill','#fff'); txt.setAttribute('font-family','Segoe UI,sans-serif');
     txt.textContent=conoId;
-    labelGroup.appendChild(bg);
     labelGroup.appendChild(txt);
   });
   clone.appendChild(labelGroup);
