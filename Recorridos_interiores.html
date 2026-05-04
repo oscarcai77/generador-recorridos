@@ -75,12 +75,12 @@
     width:100%; padding:7px 10px; margin-top:5px;
     border-radius:7px; border:1px solid #ccc; font-size:0.97rem;
   }
-  .row{ display:flex; gap:5px; flex-wrap:wrap; margin-top:6px; }
+  .row{ display:flex; gap:4px; flex-wrap:nowrap; margin-top:6px; }
   .small{
-    padding:7px 11px; font-size:0.88rem;
+    padding:6px 8px; font-size:0.82rem;
     border-radius:7px; border:0;
     background:var(--violeta); color:#fff; cursor:pointer;
-    transition:opacity 0.15s;
+    transition:opacity 0.15s; white-space:nowrap;
   }
   .small:hover{ opacity:0.85; }
   button{ background:var(--violeta); color:#fff; border:0; padding:9px 13px; border-radius:9px; cursor:pointer; font-size:0.97rem; transition:opacity 0.15s; }
@@ -113,12 +113,12 @@
   /* ===== CAMPOS CONOS GRID ===== */
   .campos-conos-grid{
     margin-top:6px; display:grid;
-    grid-template-columns:repeat(4,1fr); gap:4px;
+    grid-template-columns:repeat(6,1fr); gap:3px;
   }
   .campos-conos-grid input{
-    font-size:0.85rem; padding:4px 5px;
-    border-radius:6px; border:1px solid #ccc;
-    text-align:center; width:100%;
+    font-size:0.82rem; padding:4px 2px;
+    border-radius:5px; border:1px solid #ccc;
+    text-align:center; width:100%; min-width:0;
   }
   /* Campo mode — bigger inputs, similar to 3x3 feel */
   #camposConos_campo input{
@@ -206,6 +206,7 @@
   .eid-new.dup{ background:#ffc0c0!important; border-color:#cc0000!important; }
 
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
 
@@ -239,10 +240,12 @@
   <div class="panel-modulo">
     <h2>Recorrido 3×3</h2>
     <label>Introducir conos separados por comas</label>
-    <input class="lista-conos-input" id="listaConos_3x3" placeholder="Ej: 42,39,58,62,33,40,52">
+    <div style="display:flex;align-items:center;gap:6px;">
+      <input class="lista-conos-input" id="listaConos_3x3" placeholder="Ej: 42,39,58,62,33,40,52" style="flex:1;margin:0;">
+      <button onclick="borrarRecorrido_3x3()" title="Borrar recorrido" style="background:none;border:none;font-size:1.2rem;cursor:pointer;padding:4px;color:#c0392b;line-height:1;">🗑️</button>
+    </div>
     <div class="row">
       <button class="small" onclick="aplicarLista_3x3()">Aplicar lista</button>
-      <button class="small" onclick="borrarRecorrido_3x3()">Borrar</button>
       <button class="small" onclick="generarAleatorio_3x3()" id="btnAleatorio_3x3">Aleatorio (7)</button>
       <button class="small" onclick="copiarNumeros_3x3()">Copiar números</button>
     </div>
@@ -401,7 +404,7 @@
         <input type="number" id="nb_3x3" value="6" min="1" max="30" style="width:60px;padding:5px;border-radius:6px;border:1px solid #ccc;font-size:0.9rem;">
         <button class="small" onclick="abrirModal('3x3')" style="background:#8e44ad;flex:1;">Ver miniaturas</button>
       </div>
-      <div id="navMulti_3x3" style="display:none;">
+      <div id="navMulti_3x3" style="display:none;margin-bottom:40px;">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:#f8f0ff;border-radius:8px;border:1px solid #e0c8f0;">
           <button class="small" onclick="navMulti('3x3',-1)" style="background:#8e44ad;padding:5px 10px;">◀</button>
           <span id="navLabel_3x3" style="font-size:0.88rem;font-weight:600;color:#8e44ad;text-align:center;flex:1;">Recorrido 1 / 1</span>
@@ -484,10 +487,12 @@
   <div class="panel-modulo">
     <h2>Recorrido 4×4</h2>
     <label>Introducir conos separados por comas</label>
-    <input class="lista-conos-input" id="listaConos_4x4" placeholder="Ej: 42,39,58,62,33,40,52">
+    <div style="display:flex;align-items:center;gap:6px;">
+      <input class="lista-conos-input" id="listaConos_4x4" placeholder="Ej: 42,39,58,62,33,40,52" style="flex:1;margin:0;">
+      <button onclick="borrarRecorrido_4x4()" title="Borrar recorrido" style="background:none;border:none;font-size:1.2rem;cursor:pointer;padding:4px;color:#c0392b;line-height:1;">🗑️</button>
+    </div>
     <div class="row">
       <button class="small" onclick="aplicarLista_4x4()">Aplicar lista</button>
-      <button class="small" onclick="borrarRecorrido_4x4()">Borrar</button>
       <button class="small" onclick="generarAleatorio_4x4()" id="btnAleatorio_4x4">Aleatorio (7)</button>
       <button class="small" onclick="copiarNumeros_4x4()">Copiar números</button>
     </div>
@@ -646,7 +651,7 @@
         <input type="number" id="nb_4x4" value="6" min="1" max="30" style="width:60px;padding:5px;border-radius:6px;border:1px solid #ccc;font-size:0.9rem;">
         <button class="small" onclick="abrirModal('4x4')" style="background:#8e44ad;flex:1;">Ver miniaturas</button>
       </div>
-      <div id="navMulti_4x4" style="display:none;">
+      <div id="navMulti_4x4" style="display:none;margin-bottom:40px;">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:#f8f0ff;border-radius:8px;border:1px solid #e0c8f0;">
           <button class="small" onclick="navMulti('4x4',-1)" style="background:#8e44ad;padding:5px 10px;">◀</button>
           <span id="navLabel_4x4" style="font-size:0.88rem;font-weight:600;color:#8e44ad;text-align:center;flex:1;">Recorrido 1 / 1</span>
@@ -753,10 +758,12 @@
   <div class="panel-modulo">
     <h2>Recorrido Campo</h2>
     <label>Introducir conos separados por comas</label>
-    <input class="lista-conos-input" id="listaConos_campo" placeholder="Ej: 42,39,58,62,33,40,52">
+    <div style="display:flex;align-items:center;gap:6px;">
+      <input class="lista-conos-input" id="listaConos_campo" placeholder="Ej: 42,39,58,62,33,40,52" style="flex:1;margin:0;">
+      <button onclick="borrarRecorrido_campo()" title="Borrar recorrido" style="background:none;border:none;font-size:1.2rem;cursor:pointer;padding:4px;color:#c0392b;line-height:1;">🗑️</button>
+    </div>
     <div class="row">
       <button class="small" onclick="aplicarLista_campo()">Aplicar lista</button>
-      <button class="small" onclick="borrarRecorrido_campo()">Borrar</button>
       <button class="small" onclick="generarAleatorio_campo()" id="btnAleatorio_campo">Aleatorio (7)</button>
       <button class="small" onclick="copiarNumeros_campo()">Copiar números</button>
     </div>
@@ -955,7 +962,7 @@
           oninput="sincronizarPuntos_campo('mb',this.value)"
           style="width:100%;accent-color:#8e44ad;">
       </div>
-      <div id="navMulti_campo" style="display:none;">
+      <div id="navMulti_campo" style="display:none;margin-bottom:40px;">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:#f8f0ff;border-radius:8px;border:1px solid #e0c8f0;">
           <button class="small" onclick="navMulti('campo',-1)" style="background:#8e44ad;padding:5px 10px;">◀</button>
           <span id="navLabel_campo" style="font-size:0.88rem;font-weight:600;color:#8e44ad;text-align:center;flex:1;">Recorrido 1 / 1</span>
@@ -1057,6 +1064,8 @@
       <label style="font-size:0.92rem;white-space:nowrap;">Nº recorridos:</label>
       <input type="number" id="nModal" value="6" min="1" max="30" style="width:66px;padding:6px;border-radius:7px;border:1px solid #ccc;font-size:0.92rem;">
       <button class="small" onclick="regenModal()" style="background:#8e44ad;">↺ Regenerar</button>
+      <label style="font-size:0.92rem;white-space:nowrap;margin-left:8px;">Nombre:</label>
+      <input type="text" id="nombreModal" placeholder="recorrido" style="flex:1;min-width:100px;padding:6px;border-radius:7px;border:1px solid #ccc;font-size:0.92rem;">
     </div>
     <div class="mini-grid" id="miniGrid"></div>
     <div class="mbox-ftr" style="flex-direction:column;gap:10px;">
@@ -1066,7 +1075,7 @@
         <button class="small" onclick="exportarTodosSVG(0.61)" style="background:#2980b9;">Mediano</button>
         <button class="small" onclick="exportarTodosSVG(0.26)" style="background:#2980b9;">Pequeño</button>
         <button class="small" onclick="exportarTodosPDF()" style="background:#c0392b;">📄 PDF (todas las páginas)</button>
-        <button class="small" onclick="exportarTablaComoSVG(_mMod,_mRecs,document.getElementById('nombre_'+_mMod).value.trim()||'recorrido')" style="background:#16a085;">📋 Tabla HTML</button>
+        <button class="small" onclick="exportarTablaComoSVG(_mMod,_mRecs,document.getElementById('nombreModal').value.trim()||'recorrido')" style="background:#16a085;">📋 Tabla HTML</button>
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end;">
         <button class="small" onclick="cerrarModal()" style="background:#95a5a6;">Cerrar</button>
@@ -1472,31 +1481,23 @@ function dibujarRecorrido(ids, campos, gL, gR, gN, mapaId, getCx, getCy, triangu
     });
   };
 
-  window.generarAleatorio_3x3=function(){
+  // Función pura que calcula el recorrido según el nivel (sin tocar el DOM)
+  function _buildRoute3x3(){
     const cuad={
-      si:[24,51,91,30,70,40,55,15,96], // cuadrante 1: superior izquierdo
-      sd:[29,79,62,45,18,85,68,39,33], // cuadrante 2: superior derecho
-      ii:[27,82,59,48,13,89,71,37,22], // cuadrante 3: inferior izquierdo
-      id:[31,76,64,52,11,94,73,43,87]  // cuadrante 4: inferior derecho
+      si:[24,51,91,30,70,40,55,15,96],
+      sd:[29,79,62,45,18,85,68,39,33],
+      ii:[27,82,59,48,13,89,71,37,22],
+      id:[31,76,64,52,11,94,73,43,87]
     };
-    // Pares de cuadrantes adyacentes (circulares): 1-2 (arriba), 2-4 (derecha), 4-3 (abajo), 3-1 (izquierda)
-    // Los dos recorridos circulares posibles: [si,sd,id,ii] o [si,ii,id,sd]
     const posMap={0:[0,0],1:[1,0],2:[2,0],3:[0,1],4:[1,1],5:[2,1],6:[0,2],7:[1,2],8:[2,2]};
     function adj(p1,p2){const[x1,y1]=posMap[p1],[x2,y2]=posMap[p2];return Math.abs(x1-x2)<=1&&Math.abs(y1-y2)<=1;}
     function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a;}
-
-    // Distribuir N puntos en 4 cuadrantes lo más uniformemente posible
     function distribuirPuntos(n){
-      const base=Math.floor(n/4);
-      const extra=n%4;
+      const base=Math.floor(n/4), extra=n%4;
       const dist={si:base,sd:base,ii:base,id:base};
-      // Dar el extra a cuadrantes aleatorios
-      const qs=shuffle(['si','sd','ii','id']);
-      for(let i=0;i<extra;i++) dist[qs[i]]++;
+      shuffle(['si','sd','ii','id']).slice(0,extra).forEach(q=>dist[q]++);
       return dist;
     }
-
-    // Seleccionar 'k' conos aleatorios sin adyacencia en un cuadrante
     function selCuad(qname,k){
       const pool=shuffle([...cuad[qname]]);
       const sel=[]; const usados=new Set();
@@ -1505,63 +1506,40 @@ function dibujarRecorrido(ids, campos, gL, gR, gN, mapaId, getCx, getCy, triangu
         const pi=cuad[qname].indexOf(c);
         if(![...usados].some(p=>adj(p,pi))){sel.push(c);usados.add(pi);}
       }
-      // Si no hay suficientes con restricción, completar sin ella
-      if(sel.length<k){
-        for(const c of pool){
-          if(sel.length>=k) break;
-          if(!sel.includes(c)) sel.push(c);
-        }
-      }
+      if(sel.length<k){ for(const c of pool){ if(sel.length>=k) break; if(!sel.includes(c)) sel.push(c); } }
       return sel;
     }
-
     const dist=distribuirPuntos(NPTS);
     const selPorCuad={};
     ['si','sd','ii','id'].forEach(q=>{ selPorCuad[q]=selCuad(q,dist[q]); });
-
     let recorrido=[];
-
     if(_nivel3x3===1){
-      // Recorrido circular por cuadrantes adyacentes
-      // Cuadrante de inicio aleatorio, dirección aleatoria
-      const circulosCW=['si','sd','id','ii']; // sentido horario: 1→2→4→3
-      const startIdx=Math.floor(Math.random()*4);
-      const sentido=Math.random()<0.5?1:-1;
+      const circulosCW=['si','sd','id','ii'];
+      const startIdx=Math.floor(Math.random()*4), sentido=Math.random()<0.5?1:-1;
       const orden=[];
-      for(let i=0;i<4;i++){
-        const idx=((startIdx+i*sentido)%4+4)%4;
-        orden.push(circulosCW[idx]);
-      }
+      for(let i=0;i<4;i++) orden.push(circulosCW[((startIdx+i*sentido)%4+4)%4]);
       orden.forEach(q=>recorrido.push(...shuffle(selPorCuad[q])));
-
     } else if(_nivel3x3===2){
-      // Recorrido con exactamente un salto diagonal entre cuadrantes.
-      // Cuadrantes: si=1(sup-izq), sd=2(sup-der), ii=3(inf-izq), id=4(inf-der)
-      // Adyacentes: 1↔2, 1↔3, 2↔4, 3↔4  |  Diagonales: 1↔4, 2↔3
-      // Órdenes válidos (exactamente 1 salto diagonal) por cuadrante de inicio:
-      // Inicio 1: 1→2→3→4 o 1→3→2→4
-      // Inicio 2: 2→1→4→3 o 2→4→1→3 (con salto diagonal en negrita: 2→4→1 tiene 4→1 diagonal)
-      // Inicio 3: 3→1→4→2 o 3→4→1→2
-      // Inicio 4: 4→2→3→1 o 4→3→2→1
       const ordenesNivel2={
-        si:[ ['si','sd','ii','id'], ['si','ii','sd','id'] ],
-        sd:[ ['sd','si','id','ii'], ['sd','id','si','ii'] ],
-        ii:[ ['ii','si','id','sd'], ['ii','id','si','sd'] ],
-        id:[ ['id','sd','ii','si'], ['id','ii','sd','si'] ]
+        si:[['si','sd','ii','id'],['si','ii','sd','id']],
+        sd:[['sd','si','id','ii'],['sd','id','si','ii']],
+        ii:[['ii','si','id','sd'],['ii','id','si','sd']],
+        id:[['id','sd','ii','si'],['id','ii','sd','si']]
       };
       const starts=['si','sd','ii','id'];
       const startQ=starts[Math.floor(Math.random()*4)];
-      const opcs=ordenesNivel2[startQ];
-      const orden=opcs[Math.floor(Math.random()*opcs.length)];
+      const orden=ordenesNivel2[startQ][Math.floor(Math.random()*2)];
       orden.forEach(q=>recorrido.push(...shuffle(selPorCuad[q])));
-
     } else {
-      // Nivel 3: orden libre, al menos 1 por cuadrante garantizado
       ['si','sd','ii','id'].forEach(q=>recorrido.push(...selPorCuad[q]));
       shuffle(recorrido);
     }
+    return recorrido.slice(0,NPTS);
+  }
+  window._buildRoute3x3=_buildRoute3x3;
 
-    recorrido=recorrido.slice(0,NPTS);
+  window.generarAleatorio_3x3=function(){
+    const recorrido=_buildRoute3x3();
     campos.forEach((c,i)=>c.value=recorrido[i]||'');
     document.getElementById('triangulo_3x3').value=['A','B','C','D'][Math.floor(Math.random()*4)];
     actualizar();
@@ -1820,27 +1798,24 @@ function dibujarRecorrido(ids, campos, gL, gR, gN, mapaId, getCx, getCy, triangu
     });
   };
 
-  window.generarAleatorio_4x4=function(){
+  // Función pura que calcula el recorrido según el nivel (sin tocar el DOM)
+  function _buildRoute4x4(){
     const cuad={
-      si:[32,10,76,56,14,78,36,58,80,34,12,60,17,54,38,82], // cuadrante 1: superior izquierdo
-      sd:[64,19,42,86,23,88,62,44,90,25,66,46,21,68,40,84], // cuadrante 2: superior derecho
-      ii:[48,26,91,72,28,93,50,74,95,30,52,75,31,70,53,97], // cuadrante 3: inferior izquierdo
-      id:[55,11,33,77,13,79,35,57,81,15,37,59,18,61,39,83]  // cuadrante 4: inferior derecho
+      si:[32,10,76,56,14,78,36,58,80,34,12,60,17,54,38,82],
+      sd:[64,19,42,86,23,88,62,44,90,25,66,46,21,68,40,84],
+      ii:[48,26,91,72,28,93,50,74,95,30,52,75,31,70,53,97],
+      id:[55,11,33,77,13,79,35,57,81,15,37,59,18,61,39,83]
     };
     const posM={0:[0,0],1:[1,0],2:[2,0],3:[3,0],4:[0,1],5:[1,1],6:[2,1],7:[3,1],
       8:[0,2],9:[1,2],10:[2,2],11:[3,2],12:[0,3],13:[1,3],14:[2,3],15:[3,3]};
     function adj(p1,p2){const[x1,y1]=posM[p1],[x2,y2]=posM[p2];return Math.abs(x1-x2)<=1&&Math.abs(y1-y2)<=1;}
     function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-
     function distribuirPuntos(n){
-      const base=Math.floor(n/4);
-      const extra=n%4;
+      const base=Math.floor(n/4), extra=n%4;
       const dist={si:base,sd:base,ii:base,id:base};
-      const qs=shuffle(['si','sd','ii','id']);
-      for(let i=0;i<extra;i++) dist[qs[i]]++;
+      shuffle(['si','sd','ii','id']).slice(0,extra).forEach(q=>dist[q]++);
       return dist;
     }
-
     function selCuad(qname,k){
       const pool=shuffle([...cuad[qname]]);
       const sel=[]; const usados=new Set();
@@ -1849,48 +1824,40 @@ function dibujarRecorrido(ids, campos, gL, gR, gN, mapaId, getCx, getCy, triangu
         const pi=cuad[qname].indexOf(c);
         if(![...usados].some(p=>adj(p,pi))){sel.push(c);usados.add(pi);}
       }
-      if(sel.length<k){
-        for(const c of pool){ if(sel.length>=k) break; if(!sel.includes(c)) sel.push(c); }
-      }
+      if(sel.length<k){ for(const c of pool){ if(sel.length>=k) break; if(!sel.includes(c)) sel.push(c); } }
       return sel;
     }
-
     const dist=distribuirPuntos(NPTS);
     const selPorCuad={};
     ['si','sd','ii','id'].forEach(q=>{ selPorCuad[q]=selCuad(q,dist[q]); });
-
     let recorrido=[];
-
     if(_nivel4x4===1){
       const circulosCW=['si','sd','id','ii'];
-      const startIdx=Math.floor(Math.random()*4);
-      const sentido=Math.random()<0.5?1:-1;
+      const startIdx=Math.floor(Math.random()*4), sentido=Math.random()<0.5?1:-1;
       const orden=[];
-      for(let i=0;i<4;i++){
-        const idx=((startIdx+i*sentido)%4+4)%4;
-        orden.push(circulosCW[idx]);
-      }
+      for(let i=0;i<4;i++) orden.push(circulosCW[((startIdx+i*sentido)%4+4)%4]);
       orden.forEach(q=>recorrido.push(...shuffle(selPorCuad[q])));
-
     } else if(_nivel4x4===2){
       const ordenesNivel2={
-        si:[ ['si','sd','ii','id'], ['si','ii','sd','id'] ],
-        sd:[ ['sd','si','id','ii'], ['sd','id','si','ii'] ],
-        ii:[ ['ii','si','id','sd'], ['ii','id','si','sd'] ],
-        id:[ ['id','sd','ii','si'], ['id','ii','sd','si'] ]
+        si:[['si','sd','ii','id'],['si','ii','sd','id']],
+        sd:[['sd','si','id','ii'],['sd','id','si','ii']],
+        ii:[['ii','si','id','sd'],['ii','id','si','sd']],
+        id:[['id','sd','ii','si'],['id','ii','sd','si']]
       };
       const starts=['si','sd','ii','id'];
       const startQ=starts[Math.floor(Math.random()*4)];
-      const opcs=ordenesNivel2[startQ];
-      const orden=opcs[Math.floor(Math.random()*opcs.length)];
+      const orden=ordenesNivel2[startQ][Math.floor(Math.random()*2)];
       orden.forEach(q=>recorrido.push(...shuffle(selPorCuad[q])));
-
     } else {
       ['si','sd','ii','id'].forEach(q=>recorrido.push(...selPorCuad[q]));
       shuffle(recorrido);
     }
+    return recorrido.slice(0,NPTS);
+  }
+  window._buildRoute4x4=_buildRoute4x4;
 
-    recorrido=recorrido.slice(0,NPTS);
+  window.generarAleatorio_4x4=function(){
+    const recorrido=_buildRoute4x4();
     campos.forEach((c,i)=>c.value=recorrido[i]||'');
     document.getElementById('triangulo_4x4').value=['A','B','C','D'][Math.floor(Math.random()*4)];
     actualizar();
@@ -2965,12 +2932,12 @@ function _genC(cuad,adjFn,NPTS){
   return _shuf(sel).slice(0,NPTS);
 }
 function genData_3x3(){
-  const cuad={si:[24,51,91,30,70,40,55,15,96],sd:[29,79,62,45,18,85,68,39,33],ii:[27,82,59,48,13,89,71,37,22],id:[31,76,64,52,11,94,73,43,87]};
-  return {conos:_genC(cuad,_adj3,parseInt(document.getElementById('numPuntos_3x3').value)||7),tri:['A','B','C','D'][Math.floor(Math.random()*4)]};
+  const conos=window._buildRoute3x3();
+  return {conos, tri:['A','B','C','D'][Math.floor(Math.random()*4)]};
 }
 function genData_4x4(){
-  const cuad={si:[32,10,76,56,14,78,36,58,80,34,12,60,17,54,38,82],sd:[64,19,42,86,23,88,62,44,90,25,66,46,21,68,40,84],ii:[48,26,91,72,28,93,50,74,95,30,52,75,31,70,53,97],id:[55,11,33,77,13,79,35,57,81,15,37,59,18,61,39,83]};
-  return {conos:_genC(cuad,_adj4,parseInt(document.getElementById('numPuntos_4x4').value)||7),tri:['A','B','C','D'][Math.floor(Math.random()*4)]};
+  const conos=window._buildRoute4x4();
+  return {conos, tri:['A','B','C','D'][Math.floor(Math.random()*4)]};
 }
 function genData_campo(){
   // Use the same difficulty-aware logic as the single route button
@@ -3011,6 +2978,7 @@ function abrirModal(mod){
   _mMod=mod;
   const n=parseInt(document.getElementById('nb_'+mod).value)||6;
   document.getElementById('nModal').value=n;
+  document.getElementById('nombreModal').value=document.getElementById('nombre_'+mod).value.trim()||'';
   document.getElementById('mTitulo').textContent='🗂️ Múltiples Recorridos — '+{'3x3':'3×3','4x4':'4×4','campo':'Campo'}[mod];
   // Anomaly check for campo
   if(mod==='campo' && _mState[mod].recs.length===0){
@@ -3246,14 +3214,16 @@ function getSVGCleanForExport(mod, data, nombreBase, idx){
 function exportarTodosSVG(escala){
   if(!_mRecs.length) return;
   escala=escala||1;
-  const nombre=document.getElementById('nombre_'+_mMod).value.trim()||'recorrido';
+  const nombre=document.getElementById('nombreModal').value.trim()||'recorrido';
   const sufijo=escala===1?'':escala===0.61?'_mediano':'_pequeno';
   const vb=document.getElementById('mapa_'+_mMod).getAttribute('viewBox').split(' ').map(Number);
   const w=vb[2], h=vb[3];
+  const zip=new JSZip();
+
   _mRecs.forEach((rec,i)=>{
     const svgEl=getSVGCleanForExport(_mMod, rec, nombre, i+1);
+    let finalSvg;
     if(escala!==1){
-      // Scale all coordinates
       const svgNS='http://www.w3.org/2000/svg';
       const nuevo=document.createElementNS(svgNS,'svg');
       nuevo.setAttribute('width',(w*escala)+'mm');
@@ -3273,34 +3243,32 @@ function exportarTodosSVG(escala){
         }
         if(nodo.textContent&&nodo.children.length===0) clon.textContent=nodo.textContent;
         dest.appendChild(clon);
-        for(const h of nodo.children) copiar(h,clon);
+        for(const ch of nodo.children) copiar(ch,clon);
       }
       for(const child of svgEl.children) copiar(child,nuevo);
-      const xml=new XMLSerializer().serializeToString(nuevo);
-      const blob=new Blob([xml],{type:'image/svg+xml;charset=utf-8'});
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement('a');
-      a.href=url; a.download=`${nombre}_${i+1}${sufijo}.svg`;
-      setTimeout(()=>{a.click();URL.revokeObjectURL(url);},i*150);
+      finalSvg=nuevo;
     } else {
-      const xml=new XMLSerializer().serializeToString(svgEl);
-      const blob=new Blob([xml],{type:'image/svg+xml;charset=utf-8'});
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement('a');
-      a.href=url; a.download=`${nombre}_${i+1}.svg`;
-      setTimeout(()=>{a.click();URL.revokeObjectURL(url);},i*150);
+      finalSvg=svgEl;
     }
+    const xml=new XMLSerializer().serializeToString(finalSvg);
+    zip.file(`${nombre}_${i+1}${sufijo}.svg`, xml);
   });
 
-  // Generate tabla PDF after all SVGs
-  setTimeout(()=>{
-    generarTablaPDF(_mMod, _mRecs, nombre);
-  }, _mRecs.length * 150 + 300);
+  // Añadir tabla al ZIP
+  const tablaHtml=generarTablaHTMLStr(_mMod,_mRecs,nombre);
+  if(tablaHtml) zip.file(`${nombre}_tabla.html`, tablaHtml);
+
+  zip.generateAsync({type:'blob'}).then(blob=>{
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=`${nombre}${sufijo}.zip`; a.click();
+    URL.revokeObjectURL(url);
+  });
 }
 
 function exportarTodosPDF(){
   if(!_mRecs.length) return;
-  const nombre=document.getElementById('nombre_'+_mMod).value.trim()||'recorrido';
+  const nombre=document.getElementById('nombreModal').value.trim()||'recorrido';
   const vb=document.getElementById('mapa_'+_mMod).getAttribute('viewBox').split(' ').map(Number);
   const w=vb[2], h=vb[3];
   const isPortrait=h>=w;
@@ -3397,9 +3365,28 @@ function actualizarNavPanel(mod){
   }
 }
 
+function guardarEstadoMapa(mod){
+  const st=_mState[mod];
+  if(!st.recs.length) return;
+  if(mod==='3x3'){
+    const conos=Array.from({length:12},(_,i)=>document.getElementById('c3x3_'+(i+1))).map(c=>c?c.value:'').filter(Boolean);
+    const tri=document.getElementById('triangulo_3x3').value;
+    st.recs[st.sel]={...st.recs[st.sel], conos, tri};
+  } else if(mod==='4x4'){
+    const conos=Array.from({length:12},(_,i)=>document.getElementById('c4x4_'+(i+1))).map(c=>c?c.value:'').filter(Boolean);
+    const tri=document.getElementById('triangulo_4x4').value;
+    st.recs[st.sel]={...st.recs[st.sel], conos, tri};
+  } else {
+    const conos=Array.from({length:12},(_,i)=>document.getElementById('cC_'+(i+1))).map(c=>c?c.value:'').filter(Boolean);
+    st.recs[st.sel]={...st.recs[st.sel], conos};
+  }
+  _mRecs=st.recs;
+}
+
 function navMulti(mod, dir){
   const st=_mState[mod];
   if(!st.recs.length) return;
+  guardarEstadoMapa(mod);
   st.sel=(st.sel+dir+st.recs.length)%st.recs.length;
   cargarEnMapa(mod, st.recs[st.sel]);
   actualizarNavPanel(mod);
@@ -3525,6 +3512,13 @@ function generarTablaHTML(mod, recs, nombre){
       <thead><tr><th>Recorrido</th><th>Inicio</th>${headers}</tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
+}
+
+function generarTablaHTMLStr(mod, recs, nombre){
+  const inner=generarTablaHTML(mod, recs, nombre);
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Tabla ${nombre}</title>
+  <style>@page{size:A4 portrait;margin:12mm;}body{font-family:sans-serif;padding:10mm;margin:0;}</style>
+  </head><body>${inner}</body></html>`;
 }
 
 function exportarTablaComoSVG(mod, recs, nombre){
